@@ -90,22 +90,22 @@ class BaseClass(object):
 
     def __init__(self, *args, **kwargs):
         super(BaseClass, self).__init__(*args, **kwargs)
-        self._layer = None
-        self._db = None
+        self.layer = None
+        self.db = None
 
     def getMBTilesName(self):
-        return self._layer + ".mbtiles"
+        return self.layer + ".mbtiles"
 
     def openDB(self):
         filename = self.getMBTilesName()
 
         if os.path.isfile(filename):
-            self._db = sqlite3.connect(filename)
+            self.db = sqlite3.connect(filename)
         else:
-            abort(404, "Incorrect tileset name: " + self._layer)
+            abort(404, "Incorrect tileset name: " + self.layer)
 
     def closeDB(self):
-        self._db.close()
+        self.db.close()
 
 class ServerInfoController(BaseClass):
 
@@ -197,9 +197,9 @@ class TileMapServiceController(BaseClass):
     def resource(self, layer):
         ret = ''
         try:
-            self._layer = layer
+            self.layer = layer
             self.openDB()
-            params = self.readparams(self._db)
+            params = self.readparams(self.db)
 
             title = htmlspecialchars(params['name'])
             description = htmlspecialchars(params['description'])
@@ -226,14 +226,14 @@ class TileMapServiceController(BaseClass):
                 """ % (base, title, description, mimetype, fmt)
             )
 
-            for zoom in self.readzooms(self._db):
-                href = base + "1.0.0/" + self._layer + "/" + zoom
+            for zoom in self.readzooms(self.db):
+                href = base + "1.0.0/" + self.layer + "/" + zoom
                 units_pp = 78271.516 / pow(2, zoom)
 
                 ret += '<TileSet href="%s" units-per-pixel="%s" order="%s" />' % (href, units_pp, zoom)
             ret += textwrap.dedent("""\t</TileSets>\n</TileMap>""")
         except sqlite3.DatabaseError:
-            abort(404, "Incorrect tileset name: " + self._layer)
+            abort(404, "Incorrect tileset name: " + self.layer)
 
         return ret
 
