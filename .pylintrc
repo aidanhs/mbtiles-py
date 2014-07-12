@@ -46,7 +46,9 @@ symbols=no
 # --disable=W"
 #invalid-name camelcase
 #missing-docstring missing docstring
-disable=invalid-name,missing-docstring,no-self-use
+#no-self-use allow no self use
+#bad-continuation Some truly bizarre opinions about python line wrapping
+disable=invalid-name,missing-docstring,no-self-use,bad-continuation
 
 
 [REPORTS]
