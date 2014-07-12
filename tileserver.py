@@ -27,6 +27,18 @@ app.router.add_filter('_number', lambda c: re.compile(r'\d+'))
 def root():
     return ServerInfoController().hello()
 
+@app.route('/root.xml')
+def rootxml():
+    return TileMapServiceController().root()
+
+@app.route('/1.0.0')
+def vsn():
+    return TileMapServiceController().service()
+
+@app.route('/1.0.0/<layer:_identifier>')
+def vsnlayer(layer):
+    return TileMapServiceController().resource(layer)
+
 class BaseClass(object):
 
     def __init__(self, *args, **kwargs):
@@ -57,8 +69,6 @@ class ServerInfoController(BaseClass):
 
         ret = ''
 
-        #global $r;
-
         # TODO
         #$x = new TileMapServiceController();
         #echo "This is the " . $x->server_name . " version " . $x->server_version;
@@ -66,7 +76,7 @@ class ServerInfoController(BaseClass):
         ret += "<br /><br />Try these!"
         ret += "<ul>"
         for route in app.routes:
-            if len(route.rule) > 1 and ":layer" not in route.url:
+            if len(route.rule) > 1 and "<layer>" not in route.url:
                 ret += "<li><a href='%s'>%s</a></li>" % (route.rule, route.rule)
 
         layers = glob.glob("*.mbtiles")
@@ -80,17 +90,144 @@ class ServerInfoController(BaseClass):
 
         return ret
 
+#
+# Implements a TileMapService that returns XML information on the provided
+# services.
+#
+# @see http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification
+# @author zverik (https://github.com/Zverik)
+# @author E. Akerboom (github@infostreams.net)
+#
+class TileMapServiceController(BaseClass):
+
+    def __init__(self, *args, **kwargs):
+        super(TileMapServiceController, self).__init__(*args, **kwargs)
+        self.server_name = "Python TileMap server"
+        self.server_version = "1.0.0"
+#
+#	public function root() {
+#		$base = $this->getBaseUrl();
+#
+#		header('Content-type: text/xml');
+#		echo <<<EOF
+#<?xml version="1.0" encoding="UTF-8" ?>
+#<Services>
+#	<TileMapService title="{$this->server_name}" version="{$this->server_version}" href="${base}{$this->server_version}/" />
+#</Services>
+#EOF;
+#	}
+#
+#	public function service() {
+#		$base = $this->getBaseUrl();
+#
+#		header('Content-type: text/xml');
+#		echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
+#		echo "\n<TileMapService version=\"1.0.0\" services=\"$base\">";
+#		echo "\n\t<Title>{$this->server_name} v{$this->server_version}</Title>";
+#		echo "\n\t<Abstract />";
+#
+#		echo "\n\t<TileMaps>";
+#
+#		if ($handle = opendir('.')) {
+#			while (($file = readdir($handle)) !== false) {
+#				if (preg_match('/^[\w\d_-]+\.mbtiles$/', $file) && is_file($file)) {
+#					try {
+#						$db = new PDO('sqlite:' . $file);
+#						$params = $this->readparams($db);
+#						$name = htmlspecialchars($params['name']);
+#						$identifier = str_replace('.mbtiles', '', $file);
+#						echo "\n\t\t<TileMap title=\"$name\" srs=\"OSGEO:41001\" profile=\"global-mercator\" href=\"${base}1.0.0/$identifier\" />";
+#					}
+#					catch( PDOException $e ) {
+#						// nothing
+#					}
+#				}
+#			}
+#		}
+#
+#		echo "\n\t</TileMaps>";
+#		echo "\n</TileMapService>";
+#	}
+#
+#	function resource($layer) {
+#		try {
+#			$this->layer = $layer;
+#			$this->openDB();
+#			$params = $this->readparams($this->db);
+#
+#			$title = htmlspecialchars($params['name']);
+#			$description = htmlspecialchars($params['description']);
+#			$format = $params['format'];
+#
+#			switch (strtolower($format)) {
+#				case "jpg" :
+#				case "jpeg" :
+#					$mimetype = "image/jpeg";
+#					break;
+#
+#				default :
+#				case "png" :
+#					$format = "png";
+#					$mimetype = "image/png";
+#					break;
+#			}
+#
+#			$base = $this->getBaseUrl();
+#			header('Content-type: text/xml');
+#			echo <<<EOF
+#<?xml version="1.0" encoding="UTF-8" ?>
+#<TileMap version="1.0.0" tilemapservice="{$base}1.0.0/">
+#	<Title>$title</Title>
+#	<Abstract>$description</Abstract>
+#	<SRS>OSGEO:41001</SRS>
+#	<BoundingBox minx="-180" miny="-90" maxx="180" maxy="90" />
+#	<Origin x="0" y="0"/>
+#	<TileFormat width="256" height="256" mime-type="$mimetype" extension="$format"/>
+#	<TileSets profile="global-mercator">
+#EOF;
+#			foreach ($this->readzooms($this->db) as $zoom) {
+#				$href = $base . "1.0.0/" . $this->layer . "/" . $zoom;
+#				$units_pp = 78271.516 / pow(2, $zoom);
+#
+#				echo "<TileSet href=\"$href\" units-per-pixel=\"$units_pp\" order=\"$zoom\" />";
+#			}
+#			echo <<<EOF
+#
+#	</TileSets>
+#</TileMap>
+#EOF;
+#		}
+#		catch( PDOException $e ) {
+#			$this->error(404, "Incorrect tileset name: " . $this->layer);
+#		}
+#	}
+#
+#	function readparams($db) {
+#		$params = array();
+#		$result = $db->query('select name, value from metadata');
+#		while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+#			$params[$row['name']] = $row['value'];
+#		}
+#		return $params;
+#	}
+#
+#	function readzooms($db) {
+#		$params = $this->readparams($db);
+#		$minzoom = $params['minzoom'];
+#		$maxzoom = $params['maxzoom'];
+#
+#		return range($minzoom, $maxzoom);
+#	}
+#
+#	function getBaseUrl() {
+#		$protocol = empty($_SERVER["HTTPS"])?"http":"https";
+#		return $protocol . '://' . $_SERVER['HTTP_HOST'] . preg_replace('/\/(1.0.0\/)?[^\/]*$/', '/', $_SERVER['REQUEST_URI']);
+#	}
+
+
 app.run()
 
-#$r->map("root.xml",
-#		array("controller"=>"TileMapService", "action"=>"root"));
-#
-#$r->map("1.0.0",
-#		array("controller"=>"TileMapService", "action"=>"service"));
-#
-#$r->map("1.0.0/:layer",
-#		array("controller"=>"TileMapService", "action"=>"resource"), array("layer"=>$_identifier));
-#
+
 #$r->map("1.0.0/:layer/:z/:x/:y.:ext",
 #		array("controller"=>"maptile", "action"=>"serveTmsTile"),
 #		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
@@ -396,142 +533,7 @@ app.run()
 #
 #}
 #
-#/**
-# * Implements a TileMapService that returns XML information on the provided
-# * services.
-# *
-# * @see http://wiki.osgeo.org/wiki/Tile_Map_Service_Specification
-# * @author zverik (https://github.com/Zverik)
-# * @author E. Akerboom (github@infostreams.net)
-# */
-#class TileMapServiceController extends BaseClass {
-#
-#	public function __construct() {
-#		$this->server_name = "PHP TileMap server";
-#		$this->server_version = "1.0.0";
-#	}
-#
-#	public function root() {
-#		$base = $this->getBaseUrl();
-#
-#		header('Content-type: text/xml');
-#		echo <<<EOF
-#<?xml version="1.0" encoding="UTF-8" ?>
-#<Services>
-#	<TileMapService title="{$this->server_name}" version="{$this->server_version}" href="${base}{$this->server_version}/" />
-#</Services>
-#EOF;
-#	}
-#
-#	public function service() {
-#		$base = $this->getBaseUrl();
-#
-#		header('Content-type: text/xml');
-#		echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
-#		echo "\n<TileMapService version=\"1.0.0\" services=\"$base\">";
-#		echo "\n\t<Title>{$this->server_name} v{$this->server_version}</Title>";
-#		echo "\n\t<Abstract />";
-#
-#		echo "\n\t<TileMaps>";
-#
-#		if ($handle = opendir('.')) {
-#			while (($file = readdir($handle)) !== false) {
-#				if (preg_match('/^[\w\d_-]+\.mbtiles$/', $file) && is_file($file)) {
-#					try {
-#						$db = new PDO('sqlite:' . $file);
-#						$params = $this->readparams($db);
-#						$name = htmlspecialchars($params['name']);
-#						$identifier = str_replace('.mbtiles', '', $file);
-#						echo "\n\t\t<TileMap title=\"$name\" srs=\"OSGEO:41001\" profile=\"global-mercator\" href=\"${base}1.0.0/$identifier\" />";
-#					}
-#					catch( PDOException $e ) {
-#						// nothing
-#					}
-#				}
-#			}
-#		}
-#
-#		echo "\n\t</TileMaps>";
-#		echo "\n</TileMapService>";
-#	}
-#
-#	function resource($layer) {
-#		try {
-#			$this->layer = $layer;
-#			$this->openDB();
-#			$params = $this->readparams($this->db);
-#
-#			$title = htmlspecialchars($params['name']);
-#			$description = htmlspecialchars($params['description']);
-#			$format = $params['format'];
-#
-#			switch (strtolower($format)) {
-#				case "jpg" :
-#				case "jpeg" :
-#					$mimetype = "image/jpeg";
-#					break;
-#
-#				default :
-#				case "png" :
-#					$format = "png";
-#					$mimetype = "image/png";
-#					break;
-#			}
-#
-#			$base = $this->getBaseUrl();
-#			header('Content-type: text/xml');
-#			echo <<<EOF
-#<?xml version="1.0" encoding="UTF-8" ?>
-#<TileMap version="1.0.0" tilemapservice="{$base}1.0.0/">
-#	<Title>$title</Title>
-#	<Abstract>$description</Abstract>
-#	<SRS>OSGEO:41001</SRS>
-#	<BoundingBox minx="-180" miny="-90" maxx="180" maxy="90" />
-#	<Origin x="0" y="0"/>
-#	<TileFormat width="256" height="256" mime-type="$mimetype" extension="$format"/>
-#	<TileSets profile="global-mercator">
-#EOF;
-#			foreach ($this->readzooms($this->db) as $zoom) {
-#				$href = $base . "1.0.0/" . $this->layer . "/" . $zoom;
-#				$units_pp = 78271.516 / pow(2, $zoom);
-#
-#				echo "<TileSet href=\"$href\" units-per-pixel=\"$units_pp\" order=\"$zoom\" />";
-#			}
-#			echo <<<EOF
-#
-#	</TileSets>
-#</TileMap>
-#EOF;
-#		}
-#		catch( PDOException $e ) {
-#			$this->error(404, "Incorrect tileset name: " . $this->layer);
-#		}
-#	}
-#
-#	function readparams($db) {
-#		$params = array();
-#		$result = $db->query('select name, value from metadata');
-#		while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-#			$params[$row['name']] = $row['value'];
-#		}
-#		return $params;
-#	}
-#
-#	function readzooms($db) {
-#		$params = $this->readparams($db);
-#		$minzoom = $params['minzoom'];
-#		$maxzoom = $params['maxzoom'];
-#
-#		return range($minzoom, $maxzoom);
-#	}
-#
-#	function getBaseUrl() {
-#		$protocol = empty($_SERVER["HTTPS"])?"http":"https";
-#		return $protocol . '://' . $_SERVER['HTTP_HOST'] . preg_replace('/\/(1.0.0\/)?[^\/]*$/', '/', $_SERVER['REQUEST_URI']);
-#	}
-#}
-#
-#
+
 #
 #
 #/**
