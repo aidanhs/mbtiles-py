@@ -15,9 +15,9 @@
 #header('Access-Control-Allow-Origin: *');
 
 import bottle
-from bottle import abort, response
+from bottle import abort, response, request
 
-import sqlite3, os, re, glob, textwrap, zlib, json
+import sqlite3, os, glob, textwrap, zlib, json
 from PIL import Image, ImageDraw
 json_encode = json.dumps
 
@@ -62,7 +62,7 @@ def vsnlayer(layer):
 
 @app.route("1.0.0/<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.<ext:re:(png|jpg|jpeg|json)>")
 def servetmstile(layer, z, x, y, ext):
-    return MapTileController().serveTmsTile(layer=layer, x=x, y=y, z=z, ext=ext)
+    return MapTileController().serveTmsTile(tileset=layer, x=x, y=y, z=z, ext=ext)
 
 @app.route("<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.<ext:re:(png|jpg|jpeg|json)>")
 def servetile1(layer, z, x, y, ext):
@@ -87,7 +87,7 @@ def tilejson(layer):
     callback = None
     if request.query != '':
         callback = request.query.split('=')[1]
-    return MapTileController().tilejson(layer=layer, callback=callback)
+    return MapTileController().tileJson(layer=layer, callback=callback)
 
 class BaseClass(object):
 
@@ -276,7 +276,7 @@ class MapTileController(BaseClass):
 
         self.is_tms = False
 
-    def set(layer, x, y, z, ext, callback):
+    def set(self, layer, x, y, z, ext, callback):
         self.layer = layer
         self.x = x
         self.y = y
@@ -284,7 +284,7 @@ class MapTileController(BaseClass):
         self.ext = ext
         self.callback = callback
 
-    def serveTile(layer, x, y, z, ext, callback):
+    def serveTile(self, layer, x, y, z, ext, callback=None):
         self.set(layer, x, y, z, ext, callback)
 
         if not self.is_tms:
@@ -300,11 +300,11 @@ class MapTileController(BaseClass):
         else:
             abort(404, "Tile type not found")
 
-    def serveTmsTile(tileset, x, y, z, ext, callback):
-        self.is_tms = true
+    def serveTmsTile(self, tileset, x, y, z, ext, callback=None):
+        self.is_tms = True
         return self.serveTile(tileset + "-tms", x, y, z, ext, callback)
 
-    def jsonTile():
+    def jsonTile(self):
         # TODO
         #etag = self.etag("json");
         #self.checkCache(etag);
@@ -323,7 +323,7 @@ class MapTileController(BaseClass):
 
         return json;
 
-    def jsonpTile():
+    def jsonpTile(self):
         # TODO
         #$etag = self.etag("jsonp");
         #self.checkCache($etag);
@@ -371,7 +371,7 @@ class MapTileController(BaseClass):
     #    }
     #}
 
-    def imageTile():
+    def imageTile(self):
         # TODO
         #$etag = self.etag("img");
         #self.checkCache($etag);
@@ -382,7 +382,7 @@ class MapTileController(BaseClass):
         try:
             self.openDB()
 
-            cur = db.cursor()
+            cur = self.db.cursor()
             cur.execute('select tile_data as t from tiles where zoom_level=' + self.z + ' and tile_column=' + self.x + ' and tile_row=' + self.y)
             data = cur.fetchone()
 
@@ -391,7 +391,7 @@ class MapTileController(BaseClass):
                 # did not find a tile - return an empty (transparent) tile
                 # TODO properly
                 img = Image.new('RGBA',(256, 256))
-                draw = ImageDraw.draw(img)
+                draw = ImageDraw.Draw(img)
                 draw.rectangle([0, 0, 256, 256], fill=(0, 0, 0, 127))
                 data = img.tobytes('PNG')
                 #$png = imagecreatetruecolor(256, 256);
@@ -430,7 +430,7 @@ class MapTileController(BaseClass):
             self.closeDB()
             abort(500, 'Error querying the database: ' + e.message)
 
-    def getUTFgrid():
+    def getUTFgrid(self):
         self.openDB()
 
         try:
@@ -439,7 +439,7 @@ class MapTileController(BaseClass):
                 self.tileset = self.tileset[:len(self.tileset) - 4]
                 flip = False
 
-            cur = db.cursor()
+            cur = self.db.cursor()
             cur.execute('select grid as g from grids where zoom_level=' + self.z + ' and tile_column=' + self.x + ' and tile_row=' + self.y)
             data = cur.fetchone()
 
@@ -460,7 +460,7 @@ class MapTileController(BaseClass):
                 grid += ',"data":{'
 
                 # stuff that key with the actual data
-                cur = db.cursor()
+                cur = self.db.cursor()
                 cur.execute('select key_name as key, key_json as json from grid_data where zoom_level=' + self.z + ' and tile_column=' + self.x + ' and tile_row=' + self.y)
                 result = cur.fetchall()
                 for row in result:
@@ -473,9 +473,9 @@ class MapTileController(BaseClass):
                 return grid
         except sqlite3.DatabaseError as e:
             self.closeDB()
-            self.error(500, 'Error querying the database: ' + e.message)
+            abort(500, 'Error querying the database: ' + e.message)
 
-    def tileJson(layer, callback):
+    def tileJson(self, layer, callback):
         self.layer = layer
         self.openDB()
         try:
@@ -483,7 +483,7 @@ class MapTileController(BaseClass):
             tilejson['tilejson'] = "2.0.0"
             tilejson['scheme'] = "xyz"
 
-            cur = db.cursor()
+            cur = self.db.cursor()
             cur.execute('select name, value from metadata')
             result = cur.fetchall()
             for row in result:
@@ -526,7 +526,7 @@ class MapTileController(BaseClass):
 
         except sqlite3.DatabaseError as e:
             self.closeDB()
-            self.error(500, 'Error querying the database: ' . e.message)
+            abort(500, 'Error querying the database: ' + e.message)
 
 app.run()
 
