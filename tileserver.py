@@ -25,7 +25,7 @@ app = bottle.Bottle()
 
 identity = lambda x: x
 def identifier_filter(config):
-    regexp = r'[-\d_\s]+'
+    regexp = r'[-\d_\w\s]+'
     def to_python(val):
         return val
     def to_url(val):
@@ -39,7 +39,6 @@ def number_filter(config):
         return val
     return regexp, to_python, to_url
 app.router.add_filter('_identifier', identifier_filter)
-app.router.add_filter('_number', number_filter)
 
 def htmlspecialchars(txt):
     return txt.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
@@ -60,33 +59,33 @@ def vsn():
 def vsnlayer(layer):
     return TileMapServiceController().resource(layer=layer)
 
-@app.route("1.0.0/<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.<ext:re:(png|jpg|jpeg|json)>")
+@app.route("/1.0.0/<layer:_identifier>/<z:int>/<x:int>/<y:int>.<ext:re:(png|jpg|jpeg|json)>")
 def servetmstile(layer, z, x, y, ext):
     return MapTileController().serveTmsTile(tileset=layer, x=x, y=y, z=z, ext=ext)
 
-@app.route("<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.<ext:re:(png|jpg|jpeg|json)>")
+@app.route("/<layer:_identifier>/<z:int>/<x:int>/<y:int>.<ext:re:(png|jpg|jpeg|json)>")
 def servetile1(layer, z, x, y, ext):
     return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext)
 
-@app.route("<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.<ext:re:(json|jsonp)>")
+@app.route("/<layer:_identifier>/<z:int>/<x:int>/<y:int>.<ext:re:(json|jsonp)>")
 def servetile2(layer, z, x, y, ext):
     callback = None
     if request.query != '':
-        callback = request.query.split('=')[1]
+        callback = request.query.values()[1]
     return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext, callback=callback)
 
-@app.route("<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.grid.<ext:re:(json|jsonp)>")
+@app.route("/<layer:_identifier>/<z:int>/<x:int>/<y:int>.grid.<ext:re:(json|jsonp)>")
 def servetile3(layer, z, x, y, ext):
     callback = None
     if request.query != '':
-        callback = request.query.split('=')[1]
+        callback = request.query.values()[1]
     return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext, callback=callback)
 
-@app.route("<layer:_identifier>.tile<:re:(json|jsonp)>")
+@app.route("/<layer:_identifier>.tile<:re:(json|jsonp)>")
 def tilejson(layer):
     callback = None
-    if request.query != '':
-        callback = request.query.split('=')[1]
+    if request.query.values():
+        callback = request.query.values()[1]
     return MapTileController().tileJson(layer=layer, callback=callback)
 
 class BaseClass(object):
@@ -383,7 +382,7 @@ class MapTileController(BaseClass):
             self.openDB()
 
             cur = self.db.cursor()
-            cur.execute('select tile_data as t from tiles where zoom_level=' + self.z + ' and tile_column=' + self.x + ' and tile_row=' + self.y)
+            cur.execute('select tile_data as t from tiles where zoom_level=? and tile_column=? and tile_row=?', (self.z, self.x, self.y))
             data = cur.fetchone()
 
             if not data:
@@ -440,7 +439,7 @@ class MapTileController(BaseClass):
                 flip = False
 
             cur = self.db.cursor()
-            cur.execute('select grid as g from grids where zoom_level=' + self.z + ' and tile_column=' + self.x + ' and tile_row=' + self.y)
+            cur.execute('select grid as g from grids where zoom_level=? and tile_column=? and tile_row=?', (self.z, self.x, self.y))
             data = cur.fetchone()
 
             if not data:
@@ -461,7 +460,7 @@ class MapTileController(BaseClass):
 
                 # stuff that key with the actual data
                 cur = self.db.cursor()
-                cur.execute('select key_name as key, key_json as json from grid_data where zoom_level=' + self.z + ' and tile_column=' + self.x + ' and tile_row=' + self.y)
+                cur.execute('select key_name as key, key_json as json from grid_data where zoom_level=? and tile_column=? and tile_row=?', (self.z, self.x, self.y))
                 result = cur.fetchall()
                 for row in result:
                     grid += '"' + row[0] + '":' + row[1] + ','
