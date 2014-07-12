@@ -2,11 +2,11 @@
 /**
  * A PHP TileMap Server
  *
- * Serves image tiles, UTFgrid tiles and TileJson definitions 
+ * Serves image tiles, UTFgrid tiles and TileJson definitions
  * from MBTiles files (as used by TileMill). (Partly) implements
  * the Tile Map Services Specification.
  *
- * Originally based on https://github.com/Zverik/mbtiles-php, 
+ * Originally based on https://github.com/Zverik/mbtiles-php,
  * but refactored and extended.
  *
  * @author E. Akerboom (github@infostreams.net)
@@ -19,48 +19,48 @@ $_identifier = '[\w\d_-\s]+';
 $_number = '\d+';
 
 $r = new Router();
-$r->map("", 
+$r->map("",
 		array("controller"=>"serverinfo", "action"=>"hello"));
 
-$r->map("root.xml", 
+$r->map("root.xml",
 		array("controller"=>"TileMapService", "action"=>"root"));
 
-$r->map("1.0.0", 
+$r->map("1.0.0",
 		array("controller"=>"TileMapService", "action"=>"service"));
 
-$r->map("1.0.0/:layer", 
+$r->map("1.0.0/:layer",
 		array("controller"=>"TileMapService", "action"=>"resource"), array("layer"=>$_identifier));
 
-$r->map("1.0.0/:layer/:z/:x/:y.:ext", 
-		array("controller"=>"maptile", "action"=>"serveTmsTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+$r->map("1.0.0/:layer/:z/:x/:y.:ext",
+		array("controller"=>"maptile", "action"=>"serveTmsTile"),
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
 			  "ext"=>"(png|jpg|jpeg|json)"));
 
 $r->map(":layer/:z/:x/:y.:ext",
-		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+		array("controller"=>"maptile", "action"=>"serveTile"),
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
 			  "ext"=>"(png|jpg|jpeg|json)"));
 
 $r->map(":layer/:z/:x/:y.:ext\?:argument=:callback",
-		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+		array("controller"=>"maptile", "action"=>"serveTile"),
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
 			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
 
 $r->map(":layer/:z/:x/:y.grid.:ext",
-		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+		array("controller"=>"maptile", "action"=>"serveTile"),
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
 			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
 
 $r->map(":layer/:z/:x/:y.grid.:ext\?:argument=:callback",
-		array("controller"=>"maptile", "action"=>"serveTile"), 
-		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number, 
+		array("controller"=>"maptile", "action"=>"serveTile"),
+		array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
 			  "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
-			  			  			  
-$r->map(":layer.tilejson", 
+
+$r->map(":layer.tilejson",
 		array("controller"=>"maptile", "action"=>"tilejson"), array("layer"=>$_identifier));
 
-$r->map(":layer.tilejsonp\?:argument=:callback", 
-		array("controller"=>"maptile", "action"=>"tilejson"), 
+$r->map(":layer.tilejsonp\?:argument=:callback",
+		array("controller"=>"maptile", "action"=>"tilejson"),
 		array("layer"=>$_identifier, "argument"=>$_identifier, "callback"=>$_identifier));
 
 $r->run();
@@ -326,7 +326,7 @@ class MapTileController extends BaseClass {
 			} else {
 				// get the gzipped json from the database
 				$grid = gzuncompress($data);
-				
+
 				// manually add the data for the interactivity layer by means of string manipulation
 				// to prevent a bunch of costly calls to json_encode & json_decode
 				//
@@ -593,7 +593,7 @@ class Router extends BaseClass {
 
 		// let's see if we can return a path that is expressed *relative* to the script
 		// (i.e. if this script is in '/sites/something/router.php', and we are
-		// requesting /sites/something/here/is/my/path.png, then this function will 
+		// requesting /sites/something/here/is/my/path.png, then this function will
 		// return 'here/is/my/path.png')
 		if (strpos($here, $document_root) !== false) {
 			$relative_path = "/" . str_replace($document_root, "", $here);
@@ -629,7 +629,7 @@ class Router extends BaseClass {
 		$params = $route->params;
 		$this->controller = $params['controller']; unset($params['controller']);
 		$this->action = $params['action']; unset($params['action']);
-		if (isset($params['id'])) { 
+		if (isset($params['id'])) {
 			$this->id = $params['id'];
 		}
 		$this->params = array_merge($params, $_GET);
