@@ -106,24 +106,24 @@ class TileMapServiceController(BaseClass):
         self.server_version = "1.0.0"
 #
 #	public function root() {
-#		$base = $this->getBaseUrl();
+#		$base = self.getBaseUrl();
 #
 #		header('Content-type: text/xml');
 #		echo <<<EOF
 #<?xml version="1.0" encoding="UTF-8" ?>
 #<Services>
-#	<TileMapService title="{$this->server_name}" version="{$this->server_version}" href="${base}{$this->server_version}/" />
+#	<TileMapService title="{self.server_name}" version="{self.server_version}" href="${base}{self.server_version}/" />
 #</Services>
 #EOF;
 #	}
 #
 #	public function service() {
-#		$base = $this->getBaseUrl();
+#		$base = self.getBaseUrl();
 #
 #		header('Content-type: text/xml');
 #		echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
 #		echo "\n<TileMapService version=\"1.0.0\" services=\"$base\">";
-#		echo "\n\t<Title>{$this->server_name} v{$this->server_version}</Title>";
+#		echo "\n\t<Title>{self.server_name} v{self.server_version}</Title>";
 #		echo "\n\t<Abstract />";
 #
 #		echo "\n\t<TileMaps>";
@@ -133,7 +133,7 @@ class TileMapServiceController(BaseClass):
 #				if (preg_match('/^[\w\d_-]+\.mbtiles$/', $file) && is_file($file)) {
 #					try {
 #						$db = new PDO('sqlite:' . $file);
-#						$params = $this->readparams($db);
+#						$params = self.readparams($db);
 #						$name = htmlspecialchars($params['name']);
 #						$identifier = str_replace('.mbtiles', '', $file);
 #						echo "\n\t\t<TileMap title=\"$name\" srs=\"OSGEO:41001\" profile=\"global-mercator\" href=\"${base}1.0.0/$identifier\" />";
@@ -151,9 +151,9 @@ class TileMapServiceController(BaseClass):
 #
 #	function resource($layer) {
 #		try {
-#			$this->layer = $layer;
-#			$this->openDB();
-#			$params = $this->readparams($this->db);
+#			self.layer = $layer;
+#			self.openDB();
+#			$params = self.readparams(self.db);
 #
 #			$title = htmlspecialchars($params['name']);
 #			$description = htmlspecialchars($params['description']);
@@ -172,7 +172,7 @@ class TileMapServiceController(BaseClass):
 #					break;
 #			}
 #
-#			$base = $this->getBaseUrl();
+#			$base = self.getBaseUrl();
 #			header('Content-type: text/xml');
 #			echo <<<EOF
 #<?xml version="1.0" encoding="UTF-8" ?>
@@ -185,8 +185,8 @@ class TileMapServiceController(BaseClass):
 #	<TileFormat width="256" height="256" mime-type="$mimetype" extension="$format"/>
 #	<TileSets profile="global-mercator">
 #EOF;
-#			foreach ($this->readzooms($this->db) as $zoom) {
-#				$href = $base . "1.0.0/" . $this->layer . "/" . $zoom;
+#			foreach (self.readzooms(self.db) as $zoom) {
+#				$href = $base . "1.0.0/" . self.layer . "/" . $zoom;
 #				$units_pp = 78271.516 / pow(2, $zoom);
 #
 #				echo "<TileSet href=\"$href\" units-per-pixel=\"$units_pp\" order=\"$zoom\" />";
@@ -198,7 +198,7 @@ class TileMapServiceController(BaseClass):
 #EOF;
 #		}
 #		catch( PDOException $e ) {
-#			$this->error(404, "Incorrect tileset name: " . $this->layer);
+#			self.error(404, "Incorrect tileset name: " . self.layer);
 #		}
 #	}
 #
@@ -212,7 +212,7 @@ class TileMapServiceController(BaseClass):
 #	}
 #
 #	function readzooms($db) {
-#		$params = $this->readparams($db);
+#		$params = self.readparams($db);
 #		$minzoom = $params['minzoom'];
 #		$maxzoom = $params['maxzoom'];
 #
@@ -275,54 +275,54 @@ app.run()
 #	protected $is_tms;
 #
 #	public function __construct() {
-#		$this->is_tms = false;
+#		self.is_tms = false;
 #	}
 #
 #	protected function set($layer, $x, $y, $z, $ext, $callback) {
-#		$this->layer = $layer;
-#		$this->x = $x;
-#		$this->y = $y;
-#		$this->z = $z;
-#		$this->ext = $ext;
-#		$this->callback = $callback;
+#		self.layer = $layer;
+#		self.x = $x;
+#		self.y = $y;
+#		self.z = $z;
+#		self.ext = $ext;
+#		self.callback = $callback;
 #	}
 #
 #	public function serveTile($layer, $x, $y, $z, $ext, $callback) {
-#		$this->set($layer, $x, $y, $z, $ext, $callback);
+#		self.set($layer, $x, $y, $z, $ext, $callback);
 #
-#		if (!$this->is_tms) {
-#			$this->y = pow(2, $this->z) - 1 - $this->y;
+#		if (!self.is_tms) {
+#			self.y = pow(2, self.z) - 1 - self.y;
 #		}
 #
-#		switch (strtolower($this->ext)) {
+#		switch (strtolower(self.ext)) {
 #			case "json" :
 #			case "jsonp" :
-#				if (is_null($this->callback)) {
-#					$this->jsonTile();
+#				if (is_null(self.callback)) {
+#					self.jsonTile();
 #				} else {
-#					$this->jsonpTile();
+#					self.jsonpTile();
 #				}
 #				break;
 #
 #			case "png" :
 #			case "jpeg" :
 #			case "jpg" :
-#				$this->imageTile();
+#				self.imageTile();
 #				break;
 #		}
 #	}
 #
 #	public function serveTmsTile($tileset, $x, $y, $z, $ext, $callback) {
-#		$this->is_tms = true;
+#		self.is_tms = true;
 #
-#		$this->serveTile($tileset . "-tms", $x, $y, $z, $ext, $callback);
+#		self.serveTile($tileset . "-tms", $x, $y, $z, $ext, $callback);
 #	}
 #
 #	protected function jsonTile() {
-#		$etag = $this->etag("json");
-#		$this->checkCache($etag);
+#		$etag = self.etag("json");
+#		self.checkCache($etag);
 #
-#		$json = $this->getUTFgrid();
+#		$json = self.getUTFgrid();
 #
 #		// disable ZLIB ouput compression
 #		ini_set('zlib.output_compression', 'Off');
@@ -330,17 +330,17 @@ app.run()
 #		// serve JSON file
 #		header('Content-Type: application/json; charset=utf-8');
 #		header('Content-Length: ' . strlen($json));
-#		$this->cachingHeaders($etag);
+#		self.cachingHeaders($etag);
 #
 #		echo $json;
 #	}
 #
 #	protected function jsonpTile() {
-#		$etag = $this->etag("jsonp");
-#		$this->checkCache($etag);
+#		$etag = self.etag("jsonp");
+#		self.checkCache($etag);
 #
-#		$json = $this->getUTFgrid();
-#		$output = $this->callback . "($json)";
+#		$json = self.getUTFgrid();
+#		$output = self.callback . "($json)";
 #
 #		// disable ZLIB output compression
 #		ini_set('zlib.output_compression', 'Off');
@@ -348,13 +348,13 @@ app.run()
 #		// serve JSON file
 #		header('Content-Type: application/json; charset=utf-8');
 #		header('Content-Length: ' . strlen($output));
-#		$this->cachingHeaders($etag);
+#		self.cachingHeaders($etag);
 #
 #		echo $output;
 #	}
 #
 #	protected function etag($type) {
-#		return sha1(sprintf("%s-%s-%s-%s-%s-%s", $this->tileset, $this->x, $this->y, $this->z, $type, filemtime($this->getMBTilesName())));
+#		return sha1(sprintf("%s-%s-%s-%s-%s-%s", self.tileset, self.x, self.y, self.z, $type, filemtime(self.getMBTilesName())));
 #	}
 #
 #	protected function checkCache($etag) {
@@ -379,17 +379,17 @@ app.run()
 #	}
 #
 #	protected function imageTile() {
-#		$etag = $this->etag("img");
-#		$this->checkCache($etag);
+#		$etag = self.etag("img");
+#		self.checkCache($etag);
 #
-#		if ($this->is_tms) {
-#			$this->tileset = substr($this->tileset, 0, strlen($this->tileset) - 4);
+#		if (self.is_tms) {
+#			self.tileset = substr(self.tileset, 0, strlen(self.tileset) - 4);
 #		}
 #
 #		try {
-#			$this->openDB();
+#			self.openDB();
 #
-#			$result = $this->db->query('select tile_data as t from tiles where zoom_level=' . $this->z . ' and tile_column=' . $this->x . ' and tile_row=' . $this->y);
+#			$result = self.db->query('select tile_data as t from tiles where zoom_level=' . self.z . ' and tile_column=' . self.x . ' and tile_row=' . self.y);
 #			$data = $result->fetchColumn();
 #
 #			if (!isset($data) || $data === FALSE) {
@@ -400,14 +400,14 @@ app.run()
 #				$trans_colour = imagecolorallocatealpha($png, 0, 0, 0, 127);
 #				imagefill($png, 0, 0, $trans_colour);
 #				header('Content-type: image/png');
-#				$this->cachingHeaders($etag);
+#				self.cachingHeaders($etag);
 #				imagepng($png);
 #
 #			} else {
 #
 #				// Hooray, found a tile!
 #				// - figure out which format (jpeg or png) it is in
-#				$result = $this->db->query('select value from metadata where name="format"');
+#				$result = self.db->query('select value from metadata where name="format"');
 #				$resultdata = $result->fetchColumn();
 #				$format = isset($resultdata) && $resultdata !== FALSE ? $resultdata : 'png';
 #				if ($format == 'jpg') {
@@ -416,31 +416,31 @@ app.run()
 #
 #				// - serve the tile
 #				header('Content-type: image/' . $format);
-#				$this->cachingHeaders($etag);
+#				self.cachingHeaders($etag);
 #				print $data;
 #
 #			}
 #
 #			// done
-#			$this->closeDB();
+#			self.closeDB();
 #		}
 #		catch( PDOException $e ) {
-#			$this->closeDB();
-#			$this->error(500, 'Error querying the database: ' . $e->getMessage());
+#			self.closeDB();
+#			self.error(500, 'Error querying the database: ' . $e->getMessage());
 #		}
 #	}
 #
 #	protected function getUTFgrid() {
-#		$this->openDB();
+#		self.openDB();
 #
 #		try {
 #			$flip = true;
-#			if ($this->is_tms) {
-#				$this->tileset = substr($this->tileset, 0, strlen($this->tileset) - 4);
+#			if (self.is_tms) {
+#				self.tileset = substr(self.tileset, 0, strlen(self.tileset) - 4);
 #				$flip = false;
 #			}
 #
-#			$result = $this->db->query('select grid as g from grids where zoom_level=' . $this->z . ' and tile_column=' . $this->x . ' and tile_row=' . $this->y);
+#			$result = self.db->query('select grid as g from grids where zoom_level=' . self.z . ' and tile_column=' . self.x . ' and tile_row=' . self.y);
 #
 #			$data = $result->fetchColumn();
 #			if (!isset($data) || $data === FALSE) {
@@ -459,7 +459,7 @@ app.run()
 #				$grid .= ',"data":{';
 #
 #				// stuff that key with the actual data
-#				$result = $this->db->query('select key_name as key, key_json as json from grid_data where zoom_level=' . $this->z . ' and tile_column=' . $this->x . ' and tile_row=' . $this->y);
+#				$result = self.db->query('select key_name as key, key_json as json from grid_data where zoom_level=' . self.z . ' and tile_column=' . self.x . ' and tile_row=' . self.y);
 #				while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
 #					$grid .= '"' . $row['key'] . '":' . $row['json'] . ',';
 #				}
@@ -472,20 +472,20 @@ app.run()
 #			}
 #		}
 #		catch( PDOException $e ) {
-#			$this->closeDB();
-#			$this->error(500, 'Error querying the database: ' . $e->getMessage());
+#			self.closeDB();
+#			self.error(500, 'Error querying the database: ' . $e->getMessage());
 #		}
 #	}
 #
 #	public function tileJson($layer, $callback) {
-#		$this->layer = $layer;
-#		$this->openDB();
+#		self.layer = $layer;
+#		self.openDB();
 #		try {
 #			$tilejson = array();
 #			$tilejson['tilejson'] = "2.0.0";
 #			$tilejson['scheme'] = "xyz";
 #
-#			$result = $this->db->query('select name, value from metadata');
+#			$result = self.db->query('select name, value from metadata');
 #			while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
 #				$key = trim($row['name']);
 #				$value = $row['value'];
@@ -521,13 +521,13 @@ app.run()
 #			ini_set('zlib.output_compression', 'Off');
 #			header('Content-Type: application/json');
 #			header('Content-Length: ' . strlen($json));
-#			$this->cachingHeaders();
+#			self.cachingHeaders();
 #
 #			echo $json;
 #		}
 #		catch( PDOException $e ) {
-#			$this->closeDB();
-#			$this->error(500, 'Error querying the database: ' . $e->getMessage());
+#			self.closeDB();
+#			self.error(500, 'Error querying the database: ' . $e->getMessage());
 #		}
 #	}
 #
@@ -566,10 +566,10 @@ app.run()
 #	public $route_found = false;
 #
 #	public function __construct() {
-#		$request = $this->get_request();
+#		$request = self.get_request();
 #
-#		$this->request_uri = $request;
-#		$this->routes = array();
+#		self.request_uri = $request;
+#		self.routes = array();
 #	}
 #
 #	public function get_request() {
@@ -603,69 +603,69 @@ app.run()
 #	}
 #
 #	public function map($rule, $target = array(), $conditions = array()) {
-#		$this->routes[$rule] = new Route($rule, $this->request_uri, $target, $conditions);
+#		self.routes[$rule] = new Route($rule, self.request_uri, $target, $conditions);
 #	}
 #
 #	public function default_routes() {
-#		$this->map(':controller');
-#		$this->map(':controller/:action');
-#		$this->map(':controller/:action/:id');
+#		self.map(':controller');
+#		self.map(':controller/:action');
+#		self.map(':controller/:action/:id');
 #	}
 #
 #	private function set_route($route) {
-#		$this->route_found = true;
+#		self.route_found = true;
 #		$params = $route->params;
-#		$this->controller = $params['controller']; unset($params['controller']);
-#		$this->action = $params['action']; unset($params['action']);
+#		self.controller = $params['controller']; unset($params['controller']);
+#		self.action = $params['action']; unset($params['action']);
 #		if (isset($params['id'])) {
-#			$this->id = $params['id'];
+#			self.id = $params['id'];
 #		}
-#		$this->params = array_merge($params, $_GET);
+#		self.params = array_merge($params, $_GET);
 #
-#		if (empty($this->controller)) {
-#			$this->controller = ROUTER_DEFAULT_CONTROLLER;
+#		if (empty(self.controller)) {
+#			self.controller = ROUTER_DEFAULT_CONTROLLER;
 #		}
-#		if (empty($this->action)) {
-#			$this->action = ROUTER_DEFAULT_ACTION;
+#		if (empty(self.action)) {
+#			self.action = ROUTER_DEFAULT_ACTION;
 #		}
-#		if (empty($this->id)) {
-#			$this->id = null;
+#		if (empty(self.id)) {
+#			self.id = null;
 #		}
 #
 #		// determine controller name
-#		$this->controller_name = implode(array_map('ucfirst', explode('_', $this->controller . "_controller")));
+#		self.controller_name = implode(array_map('ucfirst', explode('_', self.controller . "_controller")));
 #	}
 #
 #	public function match_routes() {
-#		foreach ($this->routes as $route) {
+#		foreach (self.routes as $route) {
 #			if ($route->is_matched) {
-#				$this->set_route($route);
+#				self.set_route($route);
 #				break;
 #			}
 #		}
 #	}
 #
 #	public function run() {
-#		$this->match_routes();
+#		self.match_routes();
 #
-#		if ($this->route_found) {
+#		if (self.route_found) {
 #			// we found a route!
-#			if (class_exists($this->controller_name)) {
+#			if (class_exists(self.controller_name)) {
 #				// ... the controller exists
-#				$controller = new $this->controller_name();
-#				if (method_exists($controller, $this->action)) {
+#				$controller = new self.controller_name();
+#				if (method_exists($controller, self.action)) {
 #					// ... and the action as well! Now, we have to figure out
 #					//	 how we need to call this method:
 #
 #					// iterate this method's parameters and compare them with the parameter names
 #					// we defined in the route. Then, reassemble the values from the URL and put
 #					// them in the same order as method's argument list.
-#					$m = new ReflectionMethod($controller, $this->action);
+#					$m = new ReflectionMethod($controller, self.action);
 #					$params = $m->getParameters();
 #					$args = array();
 #					foreach ($params as $i=>$p) {
-#						if (isset($this->params[$p->name])) {
-#							$args[$i] = urldecode($this->params[$p->name]);
+#						if (isset(self.params[$p->name])) {
+#							$args[$i] = urldecode(self.params[$p->name]);
 #						} else {
 #							// we couldn't find this parameter in the URL! Set it to 'null' to indicate this.
 #							$args[$i] = null;
@@ -673,15 +673,15 @@ app.run()
 #					}
 #
 #					// Finally, we call the function with the resulting list of arguments
-#					call_user_func_array(array($controller, $this->action), $args);
+#					call_user_func_array(array($controller, self.action), $args);
 #				} else {
-#					$this->error(404, "Action " . $this->controller_name . "." . $this->action . "() not found");
+#					self.error(404, "Action " . self.controller_name . "." . self.action . "() not found");
 #				}
 #			} else {
-#				$this->error(404, "Controller " . $this->controller_name . " not found");
+#				self.error(404, "Controller " . self.controller_name . " not found");
 #			}
 #		} else {
-#			$this->error(404, "Page not found");
+#			self.error(404, "Page not found");
 #		}
 #	}
 #
@@ -694,9 +694,9 @@ app.run()
 #	private $conditions;
 #
 #	function __construct($url, $request_uri, $target, $conditions) {
-#		$this->url = $url;
-#		$this->params = array();
-#		$this->conditions = $conditions;
+#		self.url = $url;
+#		self.params = array();
+#		self.conditions = $conditions;
 #		$p_names = array();
 #		$p_values = array();
 #
@@ -719,12 +719,12 @@ app.run()
 #			if (preg_match('@^' . $url_regex . '$@', $request, $p_values)) {
 #				array_shift($p_values);
 #				foreach ($p_names as $index=>$value) {
-#					$this->params[substr($value, 1)] = urldecode($p_values[$index]);
+#					self.params[substr($value, 1)] = urldecode($p_values[$index]);
 #				}
 #				foreach ($target as $key=>$value) {
-#					$this->params[$key] = $value;
+#					self.params[$key] = $value;
 #				}
-#				$this->is_matched = true;
+#				self.is_matched = true;
 #				break;
 #			}
 #		}
@@ -735,8 +735,8 @@ app.run()
 #
 #	function regex_url($matches) {
 #		$key = str_replace(':', '', $matches[0]);
-#		if (array_key_exists($key, $this->conditions)) {
-#			return '(' . $this->conditions[$key] . ')';
+#		if (array_key_exists($key, self.conditions)) {
+#			return '(' . self.conditions[$key] . ')';
 #		} else {
 #			return '([a-zA-Z0-9_\+\-%]+)';
 #		}
