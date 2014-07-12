@@ -1,27 +1,86 @@
-#<?php
-#/**
-# * A PHP TileMap Server
-# *
-# * Serves image tiles, UTFgrid tiles and TileJson definitions
-# * from MBTiles files (as used by TileMill). (Partly) implements
-# * the Tile Map Services Specification.
-# *
-# * Originally based on https://github.com/Zverik/mbtiles-php,
-# * but refactored and extended.
-# *
-# * @author E. Akerboom (github@infostreams.net)
-# * @version 1.1
-# * @license LGPL
-# */
+# A PHP TileMap Server
+#
+# Serves image tiles, UTFgrid tiles and TileJson definitions
+# from MBTiles files (as used by TileMill). (Partly) implements
+# the Tile Map Services Specification.
+#
+# Originally based on https://github.com/Zverik/mbtiles-php,
+# but refactored and extended.
+#
+# @author E. Akerboom (github@infostreams.net)
+# @version 1.1
+# @license LGPL
+
+# TODO
 #header('Access-Control-Allow-Origin: *');
-#
-#$_identifier = '[\w\d_-\s]+';
-#$_number = '\d+';
-#
-#$r = new Router();
-#$r->map("",
-#		array("controller"=>"serverinfo", "action"=>"hello"));
-#
+
+import bottle
+from bottle import abort
+
+import sqlite3, os, re
+app = bottle.Bottle()
+
+app.router.add_filter('_identifier', lambda c: re.compile(r'[\d_-\s]+'))
+app.router.add_filter('_number', lambda c: re.compile(r'\d+'))
+
+@app.route('/')
+def root():
+    return ServerInfoController().hello()
+
+class BaseClass(object):
+
+    def __init__(self, *args, **kwargs):
+        super(BaseClass, self).__init__(*args, **kwargs)
+        self._layer = None
+        self._db = None
+
+    def getMBTilesName(self):
+        return self._layer + ".mbtiles"
+
+    def openDB(self):
+        filename = self.getMBTilesName()
+
+        if os.path.isfile(filename):
+            self._db = sqlite3.connect(filename)
+        else:
+            abort(404, "Incorrect tileset name: " + self._layer)
+
+    def closeDB(self):
+        self._db.close()
+
+class ServerInfoController(BaseClass):
+
+    def __init__(self, *args, **kwargs):
+        super(ServerInfoController, self).__init__(*args, **kwargs)
+
+    def hello(self):
+        #global $r;
+
+        #$x = new TileMapServiceController();
+        #echo "This is the " . $x->server_name . " version " . $x->server_version;
+        #echo "<br /><br />Try these!";
+        #echo "<ul>";
+        #foreach ($r->routes as $route) {
+        #    if (strlen($route->url) > 0 && strpos($route->url, ":layer") === false) {
+        #        $url = $route->url;
+        #        echo "<li><a href='$url'>$url</a></li>";
+        #    }
+        #}
+
+        #$layers = glob("*.mbtiles");
+        #foreach ($layers as $l) {
+        #    $l = str_replace(".mbtiles", "", $l);
+        #    $urls = array("$l/2/1/1.png", "$l.tilejson", "$l/2/1/1.json");
+        #    foreach ($urls as $u) {
+        #        echo "<li><a href='$u'>$u</a></li>";
+        #    }
+        #}
+        #echo "</ul>";
+
+        return "<br/><br/>PS: non-exhaustive list, see source for details"
+
+app.run()
+
 #$r->map("root.xml",
 #		array("controller"=>"TileMapService", "action"=>"root"));
 #
@@ -67,82 +126,8 @@
 #
 #
 #
-#class BaseClass {
-#	protected $layer;
-#	protected $db;
-#
-#	public function __construct() {
-#
-#	}
-#
-#	protected function getMBTilesName() {
-#		return $this->layer . ".mbtiles";
-#	}
-#
-#	protected function openDB() {
-#		$filename = $this->getMBTilesName();
-#
-#		if (file_exists($filename)) {
-#			$this->db = new PDO('sqlite:' . $filename, '', '');
-#		}
-#		if (!isset($this->db)) {
-#			$this->error(404, "Incorrect tileset name: " . $this->layer);
-#		}
-#	}
-#
-#	protected function closeDB() {
-#		// close the database
-#		$this->db = null;
-#	}
-#
-#	protected function error($nr, $message) {
-#		$http_codes = array(
-#			404=>'Not Found',
-#			500=>'Internal Server Error',
-#			// we don't need the rest anyway ;-)
-#		);
-#
-#		header($_SERVER['SERVER_PROTOCOL'] . " $nr {$http_codes[$nr]}");
-#		echo $message;
-#		exit ;
-#	}
-#
-#}
-#
-#class ServerInfoController extends BaseClass {
-#	public function __construct() {
-#
-#	}
-#
-#	public function hello() {
-#		global $r;
-#
-#		$x = new TileMapServiceController();
-#		echo "This is the " . $x->server_name . " version " . $x->server_version;
-#		echo "<br /><br />Try these!";
-#		echo "<ul>";
-#		foreach ($r->routes as $route) {
-#			if (strlen($route->url) > 0 && strpos($route->url, ":layer") === false) {
-#				$url = $route->url;
-#				echo "<li><a href='$url'>$url</a></li>";
-#			}
-#		}
-#
-#		$layers = glob("*.mbtiles");
-#		foreach ($layers as $l) {
-#			$l = str_replace(".mbtiles", "", $l);
-#			$urls = array("$l/2/1/1.png", "$l.tilejson", "$l/2/1/1.json");
-#			foreach ($urls as $u) {
-#				echo "<li><a href='$u'>$u</a></li>";
-#			}
-#		}
-#		echo "</ul>";
-#
-#		echo "<br/><br/>PS: non-exhaustive list, see source for details";
-#	}
-#
-#}
-#
+
+
 #class MapTileController extends BaseClass {
 #	protected $x;
 #	protected $y;
