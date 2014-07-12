@@ -55,39 +55,36 @@ def vsn():
 
 @app.route('/1.0.0/<layer:_identifier>')
 def vsnlayer(layer):
-    return TileMapServiceController().resource(layer)
+    return TileMapServiceController().resource(layer=layer)
 
-$r->map("1.0.0/:layer/:z/:x/:y.:ext",
-        array("controller"=>"maptile", "action"=>"serveTmsTile"),
-        array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
-              "ext"=>"(png|jpg|jpeg|json)"));
+@app.route("1.0.0/<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.<ext:re:(png|jpg|jpeg|json)>")
+def servetmstile(layer, z, x, y, ext):
+    return MapTileController().serveTmsTile(layer=layer, x=x, y=y, z=z, ext=ext)
 
-$r->map(":layer/:z/:x/:y.:ext",
-        array("controller"=>"maptile", "action"=>"serveTile"),
-        array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
-              "ext"=>"(png|jpg|jpeg|json)"));
+@app.route("<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.<ext:re:(png|jpg|jpeg|json)>")
+def servetile1(layer, z, x, y, ext):
+    return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext)
 
-$r->map(":layer/:z/:x/:y.:ext\?:argument=:callback",
-        array("controller"=>"maptile", "action"=>"serveTile"),
-        array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
-              "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
+@app.route("<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.<ext:re:(json|jsonp)>")
+def servetile2(layer, z, x, y, ext):
+    callback = None
+    if request.query != '':
+        callback = request.query.split('=')[1]
+    return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext, callback=callback)
 
-$r->map(":layer/:z/:x/:y.grid.:ext",
-        array("controller"=>"maptile", "action"=>"serveTile"),
-        array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
-              "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
+@app.route("<layer:_identifier>/<z:_number>/<x:_number>/<y:_number>.grid.<ext:re:(json|jsonp)>")
+def servetile3(layer, z, x, y, ext):
+    callback = None
+    if request.query != '':
+        callback = request.query.split('=')[1]
+    return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext, callback=callback)
 
-$r->map(":layer/:z/:x/:y.grid.:ext\?:argument=:callback",
-        array("controller"=>"maptile", "action"=>"serveTile"),
-        array("layer"=>$_identifier, "x"=>$_number, "y"=>$_number, "z"=>$_number,
-              "ext"=>"(json|jsonp)", "argument"=>$_identifier, "callback"=>$_identifier));
-
-$r->map(":layer.tilejson",
-        array("controller"=>"maptile", "action"=>"tilejson"), array("layer"=>$_identifier));
-
-$r->map(":layer.tilejsonp\?:argument=:callback",
-        array("controller"=>"maptile", "action"=>"tilejson"),
-        array("layer"=>$_identifier, "argument"=>$_identifier, "callback"=>$_identifier));
+@app.route("<layer:_identifier>.tile<:re:(json|jsonp)>")
+def tilejson(layer):
+    callback = None
+    if request.query != '':
+        callback = request.query.split('=')[1]
+    return MapTileController().tilejson(layer=layer, callback=callback)
 
 class BaseClass(object):
 
