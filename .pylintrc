@@ -45,10 +45,11 @@ symbols=no
 # no Warning level messages displayed, use"--disable=all --enable=classes
 # --disable=W"
 #invalid-name camelcase
-#missing-docstring missing docstring
-#no-self-use allow no self use
+#missing-docstring
+#no-self-use allow no self use in class methods
 #bad-continuation Some truly bizarre opinions about python line wrapping
-disable=invalid-name,missing-docstring,no-self-use,bad-continuation
+#too-many-arguments
+disable=invalid-name,missing-docstring,no-self-use,bad-continuation,too-many-arguments
 
 
 [REPORTS]
