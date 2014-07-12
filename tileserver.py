@@ -105,7 +105,7 @@ class TileMapServiceController(BaseClass):
         self.server_name = "Python TileMap server"
         self.server_version = "1.0.0"
 #
-#	public function root() {
+#	def root():
 #		$base = self.getBaseUrl();
 #
 #		header('Content-type: text/xml');
@@ -117,7 +117,7 @@ class TileMapServiceController(BaseClass):
 #EOF;
 #	}
 #
-#	public function service() {
+#	def service():
 #		$base = self.getBaseUrl();
 #
 #		header('Content-type: text/xml');
@@ -274,11 +274,11 @@ app.run()
 #	protected $ext;
 #	protected $is_tms;
 #
-#	public function __construct() {
+#	def __construct():
 #		self.is_tms = false;
 #	}
 #
-#	protected function set($layer, $x, $y, $z, $ext, $callback) {
+#	def set($layer, $x, $y, $z, $ext, $callback):
 #		self.layer = $layer;
 #		self.x = $x;
 #		self.y = $y;
@@ -287,7 +287,7 @@ app.run()
 #		self.callback = $callback;
 #	}
 #
-#	public function serveTile($layer, $x, $y, $z, $ext, $callback) {
+#	def serveTile($layer, $x, $y, $z, $ext, $callback):
 #		self.set($layer, $x, $y, $z, $ext, $callback);
 #
 #		if (!self.is_tms) {
@@ -312,13 +312,13 @@ app.run()
 #		}
 #	}
 #
-#	public function serveTmsTile($tileset, $x, $y, $z, $ext, $callback) {
+#	def serveTmsTile($tileset, $x, $y, $z, $ext, $callback):
 #		self.is_tms = true;
 #
 #		self.serveTile($tileset . "-tms", $x, $y, $z, $ext, $callback);
 #	}
 #
-#	protected function jsonTile() {
+#	def jsonTile():
 #		$etag = self.etag("json");
 #		self.checkCache($etag);
 #
@@ -335,7 +335,7 @@ app.run()
 #		echo $json;
 #	}
 #
-#	protected function jsonpTile() {
+#	def jsonpTile():
 #		$etag = self.etag("jsonp");
 #		self.checkCache($etag);
 #
@@ -353,18 +353,18 @@ app.run()
 #		echo $output;
 #	}
 #
-#	protected function etag($type) {
+#	def etag($type):
 #		return sha1(sprintf("%s-%s-%s-%s-%s-%s", self.tileset, self.x, self.y, self.z, $type, filemtime(self.getMBTilesName())));
 #	}
 #
-#	protected function checkCache($etag) {
+#	def checkCache($etag):
 #		if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $etag) {
 #			header('HTTP/1.1 304 Not Modified');
 #			exit();
 #		}
 #	}
 #
-#	protected function cachingHeaders($etag=null) {
+#	def cachingHeaders($etag=null):
 #		$day = 60*60*24;
 #		$expires = 1 * $day;
 #
@@ -378,7 +378,7 @@ app.run()
 #		}
 #	}
 #
-#	protected function imageTile() {
+#	def imageTile():
 #		$etag = self.etag("img");
 #		self.checkCache($etag);
 #
@@ -430,7 +430,7 @@ app.run()
 #		}
 #	}
 #
-#	protected function getUTFgrid() {
+#	def getUTFgrid():
 #		self.openDB();
 #
 #		try {
@@ -477,7 +477,7 @@ app.run()
 #		}
 #	}
 #
-#	public function tileJson($layer, $callback) {
+#	def tileJson($layer, $callback):
 #		self.layer = $layer;
 #		self.openDB();
 #		try {
@@ -565,14 +565,14 @@ app.run()
 #	public $params;
 #	public $route_found = false;
 #
-#	public function __construct() {
+#	def __construct():
 #		$request = self.get_request();
 #
 #		self.request_uri = $request;
 #		self.routes = array();
 #	}
 #
-#	public function get_request() {
+#	def get_request():
 #		// find out the absolute path to this script
 #		$here = str_replace("\\", "/", realpath(rtrim(dirname(__FILE__), '/')) . "/");
 #
@@ -602,17 +602,17 @@ app.run()
 #		return urldecode($_SERVER["REQUEST_URI"]);
 #	}
 #
-#	public function map($rule, $target = array(), $conditions = array()) {
+#	def map($rule, $target = array(), $conditions = array()):
 #		self.routes[$rule] = new Route($rule, self.request_uri, $target, $conditions);
 #	}
 #
-#	public function default_routes() {
+#	def default_routes():
 #		self.map(':controller');
 #		self.map(':controller/:action');
 #		self.map(':controller/:action/:id');
 #	}
 #
-#	private function set_route($route) {
+#	def set_route($route):
 #		self.route_found = true;
 #		$params = $route->params;
 #		self.controller = $params['controller']; unset($params['controller']);
@@ -636,7 +636,7 @@ app.run()
 #		self.controller_name = implode(array_map('ucfirst', explode('_', self.controller . "_controller")));
 #	}
 #
-#	public function match_routes() {
+#	def match_routes():
 #		foreach (self.routes as $route) {
 #			if ($route->is_matched) {
 #				self.set_route($route);
@@ -645,7 +645,7 @@ app.run()
 #		}
 #	}
 #
-#	public function run() {
+#	def run():
 #		self.match_routes();
 #
 #		if (self.route_found) {
