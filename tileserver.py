@@ -17,11 +17,29 @@
 import bottle
 from bottle import abort, response
 
-import sqlite3, os, re, glob, indent, cgi
+import sqlite3, os, re, glob, textwrap
 app = bottle.Bottle()
 
-app.router.add_filter('_identifier', lambda c: re.compile(r'[\d_-\s]+'))
-app.router.add_filter('_number', lambda c: re.compile(r'\d+'))
+identity = lambda x: x
+def identifier_filter(config):
+    regexp = r'[-\d_\s]+'
+    def to_python(val):
+        return val
+    def to_url(val):
+        return val
+    return regexp, to_python, to_url
+def number_filter(config):
+    regexp = r'\d+'
+    def to_python(val):
+        return val
+    def to_url(val):
+        return val
+    return regexp, to_python, to_url
+app.router.add_filter('_identifier', identifier_filter)
+app.router.add_filter('_number', number_filter)
+
+def htmlspecialchars(txt):
+    return txt.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
 
 @app.route('/')
 def root():
@@ -76,7 +94,7 @@ class ServerInfoController(BaseClass):
         ret += "<br /><br />Try these!"
         ret += "<ul>"
         for route in app.routes:
-            if len(route.rule) > 1 and "<layer>" not in route.url:
+            if len(route.rule) > 1 and "<layer" not in route.rule:
                 ret += "<li><a href='%s'>%s</a></li>" % (route.rule, route.rule)
 
         layers = glob.glob("*.mbtiles")
@@ -105,102 +123,107 @@ class TileMapServiceController(BaseClass):
         self.server_name = "Python TileMap server"
         self.server_version = "1.0.0"
 
-    def root():
-        base = self.getBaseUrl();
+    def root(self):
+        base = self.getBaseUrl()
 
-        header('Content-type: text/xml');
-        return indent.dedent("""\
+        response.set_header('Content-type', 'text/xml')
+        return textwrap.dedent("""\
             <?xml version="1.0" encoding="UTF-8" ?>
             <Services>
                 <TileMapService title="%s" version="%s" href="%s%s/" />
-            </Services>""" % (self.server_name, self.server_version, base, self.server_version))
+            </Services>""" % (
+                self.server_name, self.server_version, base, self.server_version
+            ))
 
-    def service():
+    def service(self):
         base = self.getBaseUrl()
 
         response.set_header('Content-type', 'text/xml')
         ret = ''
-        ret += "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
-        ret += "\n<TileMapService version=\"1.0.0\" services=\"%s\">" % (base,);
-        ret += "\n\t<Title>{self.server_name} v{self.server_version}</Title>";
-        ret += "\n\t<Abstract />";
+        ret += "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"
+        ret += "\n<TileMapService version=\"1.0.0\" services=\"%s\">" % (base,)
+        ret += "\n\t<Title>%s v%s</Title>" % (self.server_name, self.server_version)
+        ret += "\n\t<Abstract />"
 
-        ret += "\n\t<TileMaps>";
+        ret += "\n\t<TileMaps>"
 
         for dbfile in glob.glob('*.mbtiles'):
             if not os.path.isfile(dbfile):
                 continue
             try:
-                aidan
                 db = sqlite3.connect(dbfile)
-                params = self.readparams(db);
-                name = cgi.escape(params['name']).encode('ascii', 'xmlcharrefreplace')
+                params = self.readparams(db)
+                name = htmlspecialchars(params['name'])
                 identifier = dbfile.replace('.mbtiles', '')
-                ret += "\n\t\t<TileMap title=\"%s\" srs=\"OSGEO:41001\" profile=\"global-mercator\" href=\"%s1.0.0/%s\" />" % (name, base, identifier);
-            except DatabaseError as e:
+                ret += ('\n\t\t<TileMap title="%s" srs="OSGEO:41001" ' +
+                    'profile="global-mercator" href="%s1.0.0/%s" />'
+                    ) % (name, base, identifier)
+            except sqlite3.DatabaseError:
                 pass
 
-        ret += "\n\t</TileMaps>";
-        ret += "\n</TileMapService>";
+        ret += "\n\t</TileMaps>"
+        ret += "\n</TileMapService>"
         return ret
 
-    def resource(layer):
+    def resource(self, layer):
         ret = ''
         try:
-            self._layer = layer;
-            self.openDB();
-            params = self.readparams(self._db);
+            self._layer = layer
+            self.openDB()
+            params = self.readparams(self._db)
 
-            title = htmlspecialchars(params['name']);
-            description = htmlspecialchars(params['description']);
-            fmt = params['format'];
+            title = htmlspecialchars(params['name'])
+            description = htmlspecialchars(params['description'])
+            fmt = params['format']
 
-            if fmt.lower in ["jpg","jpeg"]:
-                mimetype = "image/jpeg";
+            if fmt.lower in ["jpg", "jpeg"]:
+                mimetype = "image/jpeg"
             else:
-                format = "png";
-                mimetype = "image/png";
+                fmt = "png"
+                mimetype = "image/png"
 
-            base = self.getBaseUrl();
+            base = self.getBaseUrl()
             response.set_header('Content-type', 'text/xml')
-            ret += indent.dedent("""\
+            ret += textwrap.dedent("""\
                 <?xml version="1.0" encoding="UTF-8" ?>
                 <TileMap version="1.0.0" tilemapservice="%s1.0.0/">
-                    <Title>%s</Title>
-                    <Abstract>%s</Abstract>
-                    <SRS>OSGEO:41001</SRS>
-                    <BoundingBox minx="-180" miny="-90" maxx="180" maxy="90" />
-                    <Origin x="0" y="0"/>
-                    <TileFormat width="256" height="256" mime-type="%s" extension="%s"/>
-                    <TileSets profile="global-mercator">""" % (base, title, description, mimetype, fmt))
+                \t<Title>%s</Title>
+                \t<Abstract>%s</Abstract>
+                \t<SRS>OSGEO:41001</SRS>
+                \t<BoundingBox minx="-180" miny="-90" maxx="180" maxy="90" />
+                \t<Origin x="0" y="0"/>
+                \t<TileFormat width="256" height="256" mime-type="%s" extension="%s"/>
+                \t<TileSets profile="global-mercator">
+                """ % (base, title, description, mimetype, fmt)
+            )
 
-            for zoom in self.readzooms(self.db):
-                href = base + "1.0.0/" + self.layer + "/" + zoom;
-                units_pp = 78271.516 / pow(2, zoom);
+            for zoom in self.readzooms(self._db):
+                href = base + "1.0.0/" + self._layer + "/" + zoom
+                units_pp = 78271.516 / pow(2, zoom)
 
-                ret += "<TileSet href=\"%s\" units-per-pixel=\"%s\" order=\"%s\" />" % (href, units_pp, zoom);
-            ret += indent.dedent("""\
-                    </TileSets>
-                </TileMap>""")
-        except DatabaseError as e:
-            abort(404, "Incorrect tileset name: " . self.layer)
+                ret += '<TileSet href="%s" units-per-pixel="%s" order="%s" />' % (href, units_pp, zoom)
+            ret += textwrap.dedent("""\t</TileSets>\n</TileMap>""")
+        except sqlite3.DatabaseError:
+            abort(404, "Incorrect tileset name: " + self._layer)
 
-    def readparams(db):
-        params = {};
+        return ret
+
+    def readparams(self, db):
+        params = {}
         cur = db.cursor()
         cur.execute('select name, value from metadata')
         result = cur.fetchall()
         for name, value in result:
-            params[name] = value;
-        return params;
+            params[name] = value
+        return params
 
-    def readzooms(db):
-        params = self.readparams(db);
-        minzoom = params['minzoom'];
-        maxzoom = params['maxzoom'];
-        return range(minzoom, maxzoom + 1);
+    def readzooms(self, db):
+        params = self.readparams(db)
+        minzoom = params['minzoom']
+        maxzoom = params['maxzoom']
+        return range(minzoom, maxzoom + 1)
 
-    def getBaseUrl():
+    def getBaseUrl(self):
         return "http://localhost:8080/"
         # TODO
         #$protocol = empty($_SERVER["HTTPS"])?"http":"https";
