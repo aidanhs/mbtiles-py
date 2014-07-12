@@ -104,125 +104,126 @@ class TileMapServiceController(BaseClass):
         super(TileMapServiceController, self).__init__(*args, **kwargs)
         self.server_name = "Python TileMap server"
         self.server_version = "1.0.0"
-#
-#    def root():
-#        $base = self.getBaseUrl();
-#
-#        header('Content-type: text/xml');
-#        echo <<<EOF
-#<?xml version="1.0" encoding="UTF-8" ?>
-#<Services>
-#    <TileMapService title="{self.server_name}" version="{self.server_version}" href="${base}{self.server_version}/" />
-#</Services>
-#EOF;
-#    }
-#
-#    def service():
-#        $base = self.getBaseUrl();
-#
-#        header('Content-type: text/xml');
-#        echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
-#        echo "\n<TileMapService version=\"1.0.0\" services=\"$base\">";
-#        echo "\n\t<Title>{self.server_name} v{self.server_version}</Title>";
-#        echo "\n\t<Abstract />";
-#
-#        echo "\n\t<TileMaps>";
-#
-#        if ($handle = opendir('.')) {
-#            while (($file = readdir($handle)) !== false) {
-#                if (preg_match('/^[\w\d_-]+\.mbtiles$/', $file) && is_file($file)) {
-#                    try {
-#                        $db = new PDO('sqlite:' . $file);
-#                        $params = self.readparams($db);
-#                        $name = htmlspecialchars($params['name']);
-#                        $identifier = str_replace('.mbtiles', '', $file);
-#                        echo "\n\t\t<TileMap title=\"$name\" srs=\"OSGEO:41001\" profile=\"global-mercator\" href=\"${base}1.0.0/$identifier\" />";
-#                    }
-#                    catch( PDOException $e ) {
-#                        // nothing
-#                    }
-#                }
-#            }
-#        }
-#
-#        echo "\n\t</TileMaps>";
-#        echo "\n</TileMapService>";
-#    }
-#
-#    function resource($layer) {
-#        try {
-#            self.layer = $layer;
-#            self.openDB();
-#            $params = self.readparams(self.db);
-#
-#            $title = htmlspecialchars($params['name']);
-#            $description = htmlspecialchars($params['description']);
-#            $format = $params['format'];
-#
-#            switch (strtolower($format)) {
-#                case "jpg" :
-#                case "jpeg" :
-#                    $mimetype = "image/jpeg";
-#                    break;
-#
-#                default :
-#                case "png" :
-#                    $format = "png";
-#                    $mimetype = "image/png";
-#                    break;
-#            }
-#
-#            $base = self.getBaseUrl();
-#            header('Content-type: text/xml');
-#            echo <<<EOF
-#<?xml version="1.0" encoding="UTF-8" ?>
-#<TileMap version="1.0.0" tilemapservice="{$base}1.0.0/">
-#    <Title>$title</Title>
-#    <Abstract>$description</Abstract>
-#    <SRS>OSGEO:41001</SRS>
-#    <BoundingBox minx="-180" miny="-90" maxx="180" maxy="90" />
-#    <Origin x="0" y="0"/>
-#    <TileFormat width="256" height="256" mime-type="$mimetype" extension="$format"/>
-#    <TileSets profile="global-mercator">
-#EOF;
-#            foreach (self.readzooms(self.db) as $zoom) {
-#                $href = $base . "1.0.0/" . self.layer . "/" . $zoom;
-#                $units_pp = 78271.516 / pow(2, $zoom);
-#
-#                echo "<TileSet href=\"$href\" units-per-pixel=\"$units_pp\" order=\"$zoom\" />";
-#            }
-#            echo <<<EOF
-#
-#    </TileSets>
-#</TileMap>
-#EOF;
-#        }
-#        catch( PDOException $e ) {
-#            self.error(404, "Incorrect tileset name: " . self.layer);
-#        }
-#    }
-#
-#    function readparams($db) {
-#        $params = array();
-#        $result = $db->query('select name, value from metadata');
-#        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-#            $params[$row['name']] = $row['value'];
-#        }
-#        return $params;
-#    }
-#
-#    function readzooms($db) {
-#        $params = self.readparams($db);
-#        $minzoom = $params['minzoom'];
-#        $maxzoom = $params['maxzoom'];
-#
-#        return range($minzoom, $maxzoom);
-#    }
-#
-#    function getBaseUrl() {
-#        $protocol = empty($_SERVER["HTTPS"])?"http":"https";
-#        return $protocol . '://' . $_SERVER['HTTP_HOST'] . preg_replace('/\/(1.0.0\/)?[^\/]*$/', '/', $_SERVER['REQUEST_URI']);
-#    }
+
+    def root():
+        base = self.getBaseUrl();
+
+        header('Content-type: text/xml');
+        echo <<<EOF
+<?xml version="1.0" encoding="UTF-8" ?>
+<Services>
+    <TileMapService title="{self.server_name}" version="{self.server_version}" href="${base}{self.server_version}/" />
+</Services>
+EOF;
+    }
+
+    def service():
+        $base = self.getBaseUrl();
+
+        header('Content-type: text/xml');
+        echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
+        echo "\n<TileMapService version=\"1.0.0\" services=\"$base\">";
+        echo "\n\t<Title>{self.server_name} v{self.server_version}</Title>";
+        echo "\n\t<Abstract />";
+
+        echo "\n\t<TileMaps>";
+
+        if ($handle = opendir('.')) {
+            while (($file = readdir($handle)) !== false) {
+                if (preg_match('/^[\w\d_-]+\.mbtiles$/', $file) && is_file($file)) {
+                    try {
+                        $db = new PDO('sqlite:' . $file);
+                        $params = self.readparams($db);
+                        $name = htmlspecialchars($params['name']);
+                        $identifier = str_replace('.mbtiles', '', $file);
+                        echo "\n\t\t<TileMap title=\"$name\" srs=\"OSGEO:41001\" profile=\"global-mercator\" href=\"${base}1.0.0/$identifier\" />";
+                    }
+                    catch( PDOException $e ) {
+                        // nothing
+                    }
+                }
+            }
+        }
+
+        echo "\n\t</TileMaps>";
+        echo "\n</TileMapService>";
+    }
+
+    def resource($layer):
+        try {
+            self.layer = $layer;
+            self.openDB();
+            $params = self.readparams(self.db);
+
+            $title = htmlspecialchars($params['name']);
+            $description = htmlspecialchars($params['description']);
+            $format = $params['format'];
+
+            switch (strtolower($format)) {
+                case "jpg" :
+                case "jpeg" :
+                    $mimetype = "image/jpeg";
+                    break;
+
+                default :
+                case "png" :
+                    $format = "png";
+                    $mimetype = "image/png";
+                    break;
+            }
+
+            $base = self.getBaseUrl();
+            header('Content-type: text/xml');
+            echo <<<EOF
+<?xml version="1.0" encoding="UTF-8" ?>
+<TileMap version="1.0.0" tilemapservice="{$base}1.0.0/">
+    <Title>$title</Title>
+    <Abstract>$description</Abstract>
+    <SRS>OSGEO:41001</SRS>
+    <BoundingBox minx="-180" miny="-90" maxx="180" maxy="90" />
+    <Origin x="0" y="0"/>
+    <TileFormat width="256" height="256" mime-type="$mimetype" extension="$format"/>
+    <TileSets profile="global-mercator">
+EOF;
+            foreach (self.readzooms(self.db) as $zoom) {
+                $href = $base . "1.0.0/" . self.layer . "/" . $zoom;
+                $units_pp = 78271.516 / pow(2, $zoom);
+
+                echo "<TileSet href=\"$href\" units-per-pixel=\"$units_pp\" order=\"$zoom\" />";
+            }
+            echo <<<EOF
+
+    </TileSets>
+</TileMap>
+EOF;
+        }
+        catch( PDOException $e ) {
+            self.error(404, "Incorrect tileset name: " . self.layer);
+        }
+    }
+
+    def readparams($db):
+        $params = array();
+        $result = $db->query('select name, value from metadata');
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+            $params[$row['name']] = $row['value'];
+        }
+        return $params;
+    }
+
+    def readzooms($db):
+        $params = self.readparams($db);
+        $minzoom = $params['minzoom'];
+        $maxzoom = $params['maxzoom'];
+
+        return range($minzoom, $maxzoom);
+    }
+
+    def getBaseUrl():
+        return "http://localhost:8080/"
+        # TODO
+        #$protocol = empty($_SERVER["HTTPS"])?"http":"https";
+        #return $protocol . '://' . $_SERVER['HTTP_HOST'] . preg_replace('/\/(1.0.0\/)?[^\/]*$/', '/', $_SERVER['REQUEST_URI']);
 
 
 app.run()
@@ -693,7 +694,7 @@ app.run()
 #    public $url;
 #    private $conditions;
 #
-#    function __construct($url, $request_uri, $target, $conditions) {
+#    def __construct($url, $request_uri, $target, $conditions):
 #        self.url = $url;
 #        self.params = array();
 #        self.conditions = $conditions;
@@ -733,7 +734,7 @@ app.run()
 #        unset($p_values);
 #    }
 #
-#    function regex_url($matches) {
+#    def regex_url($matches):
 #        $key = str_replace(':', '', $matches[0]);
 #        if (array_key_exists($key, self.conditions)) {
 #            return '(' . self.conditions[$key] . ')';
