@@ -17,7 +17,10 @@
 import bottle
 from bottle import abort, response
 
-import sqlite3, os, re, glob, textwrap
+import sqlite3, os, re, glob, textwrap, zlib, json
+from PIL import Image, ImageDraw
+json_encode = json.dumps
+
 app = bottle.Bottle()
 
 identity = lambda x: x
@@ -260,273 +263,270 @@ class TileMapServiceController(BaseClass):
 
 
 
-class MapTileController extends BaseClass {
-    protected $x;
-    protected $y;
-    protected $z;
-    protected $tileset;
-    protected $ext;
-    protected $is_tms;
+class MapTileController(BaseClass):
 
-    def __construct():
-        self.is_tms = false;
-    }
+    def __init__(self, *args, **kwargs):
+        super(MapTileController, self).__init__(*args, **kwargs)
+        self.x = None
+        self.y = None
+        self.z = None
+        self.tileset = None
+        self.ext = None
+        self.callback = None
 
-    def set($layer, $x, $y, $z, $ext, $callback):
-        self.layer = $layer;
-        self.x = $x;
-        self.y = $y;
-        self.z = $z;
-        self.ext = $ext;
-        self.callback = $callback;
-    }
+        self.is_tms = False
 
-    def serveTile($layer, $x, $y, $z, $ext, $callback):
-        self.set($layer, $x, $y, $z, $ext, $callback);
+    def set(layer, x, y, z, ext, callback):
+        self.layer = layer
+        self.x = x
+        self.y = y
+        self.z = z
+        self.ext = ext
+        self.callback = callback
 
-        if (!self.is_tms) {
-            self.y = pow(2, self.z) - 1 - self.y;
-        }
+    def serveTile(layer, x, y, z, ext, callback):
+        self.set(layer, x, y, z, ext, callback)
 
-        switch (strtolower(self.ext)) {
-            case "json" :
-            case "jsonp" :
-                if (is_null(self.callback)) {
-                    self.jsonTile();
-                } else {
-                    self.jsonpTile();
-                }
-                break;
+        if not self.is_tms:
+            self.y = pow(2, self.z) - 1 - self.y
 
-            case "png" :
-            case "jpeg" :
-            case "jpg" :
-                self.imageTile();
-                break;
-        }
-    }
+        if self.ext.lower() in ["json", "jsonp"]:
+            if self.callback is None:
+                return self.jsonTile()
+            else:
+                return self.jsonpTile()
+        elif self.ext.lower() in ["png", "jpeg", "jpg"]:
+            return self.imageTile()
+        else:
+            abort(404, "Tile type not found")
 
-    def serveTmsTile($tileset, $x, $y, $z, $ext, $callback):
-        self.is_tms = true;
-
-        self.serveTile($tileset . "-tms", $x, $y, $z, $ext, $callback);
-    }
+    def serveTmsTile(tileset, x, y, z, ext, callback):
+        self.is_tms = true
+        return self.serveTile(tileset + "-tms", x, y, z, ext, callback)
 
     def jsonTile():
-        $etag = self.etag("json");
-        self.checkCache($etag);
+        # TODO
+        #etag = self.etag("json");
+        #self.checkCache(etag);
 
-        $json = self.getUTFgrid();
+        json = self.getUTFgrid()
 
-        // disable ZLIB ouput compression
-        ini_set('zlib.output_compression', 'Off');
+        # TODO
+        # disable ZLIB ouput compression
+        #ini_set('zlib.output_compression', 'Off');
 
-        // serve JSON file
-        header('Content-Type: application/json; charset=utf-8');
-        header('Content-Length: ' . strlen($json));
-        self.cachingHeaders($etag);
+        # serve JSON file
+        response.set_header('Content-type', 'application/json; charset=utf-8')
+        response.set_header('Content-Length', len(json))
+        # TODO
+        #self.cachingHeaders(etag);
 
-        echo $json;
-    }
+        return json;
 
     def jsonpTile():
-        $etag = self.etag("jsonp");
-        self.checkCache($etag);
+        # TODO
+        #$etag = self.etag("jsonp");
+        #self.checkCache($etag);
 
-        $json = self.getUTFgrid();
-        $output = self.callback . "($json)";
+        json = self.getUTFgrid()
+        jsonp = self.callback + "(" + json + ")"
 
-        // disable ZLIB output compression
-        ini_set('zlib.output_compression', 'Off');
+        # TODO
+        # disable ZLIB output compression
+        #ini_set('zlib.output_compression', 'Off');
 
-        // serve JSON file
-        header('Content-Type: application/json; charset=utf-8');
-        header('Content-Length: ' . strlen($output));
-        self.cachingHeaders($etag);
+        # serve JSON file
+        response.set_header('Content-type', 'application/json; charset=utf-8')
+        response.set_header('Content-Length', len(json))
+        # TODO
+        #self.cachingHeaders(etag);
 
-        echo $output;
-    }
+        return jsonp
 
-    def etag($type):
-        return sha1(sprintf("%s-%s-%s-%s-%s-%s", self.tileset, self.x, self.y, self.z, $type, filemtime(self.getMBTilesName())));
-    }
+    # TODO
+    #def etag($type):
+    #    return sha1(sprintf("%s-%s-%s-%s-%s-%s", self.tileset, self.x, self.y, self.z, $type, filemtime(self.getMBTilesName())));
+    #}
 
-    def checkCache($etag):
-        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $etag) {
-            header('HTTP/1.1 304 Not Modified');
-            exit();
-        }
-    }
+    # TODO
+    #def checkCache($etag):
+    #    if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $etag) {
+    #        header('HTTP/1.1 304 Not Modified');
+    #        exit();
+    #    }
+    #}
 
-    def cachingHeaders($etag=null):
-        $day = 60*60*24;
-        $expires = 1 * $day;
+    # TODO
+    #def cachingHeaders($etag=null):
+    #    $day = 60*60*24;
+    #    $expires = 1 * $day;
 
-        // For an explanation on how the expires header and the etag header work together,
-        // please see http://stackoverflow.com/a/500103/426224
-        header("Expires: " . gmdate('D, d M Y H:i:s', time()+$expires));
-        header("Pragma: cache");
-        header("Cache-Control: max-age=$expires");
-        if (is_string($etag)) {
-            header("ETag: {$etag}");
-        }
-    }
+    #    // For an explanation on how the expires header and the etag header work together,
+    #    // please see http://stackoverflow.com/a/500103/426224
+    #    header("Expires: " . gmdate('D, d M Y H:i:s', time()+$expires));
+    #    header("Pragma: cache");
+    #    header("Cache-Control: max-age=$expires");
+    #    if (is_string($etag)) {
+    #        header("ETag: {$etag}");
+    #    }
+    #}
 
     def imageTile():
-        $etag = self.etag("img");
-        self.checkCache($etag);
+        # TODO
+        #$etag = self.etag("img");
+        #self.checkCache($etag);
 
-        if (self.is_tms) {
-            self.tileset = substr(self.tileset, 0, strlen(self.tileset) - 4);
-        }
+        if self.is_tms:
+            self.tileset = self.tileset[:len(self.tileset) - 4]
 
-        try {
-            self.openDB();
+        try:
+            self.openDB()
 
-            $result = self.db->query('select tile_data as t from tiles where zoom_level=' . self.z . ' and tile_column=' . self.x . ' and tile_row=' . self.y);
-            $data = $result->fetchColumn();
+            cur = db.cursor()
+            cur.execute('select tile_data as t from tiles where zoom_level=' + self.z + ' and tile_column=' + self.x + ' and tile_row=' + self.y)
+            data = cur.fetchone()
 
-            if (!isset($data) || $data === FALSE) {
+            if not data:
 
-                // did not find a tile - return an empty (transparent) tile
-                $png = imagecreatetruecolor(256, 256);
-                imagesavealpha($png, true);
-                $trans_colour = imagecolorallocatealpha($png, 0, 0, 0, 127);
-                imagefill($png, 0, 0, $trans_colour);
-                header('Content-type: image/png');
-                self.cachingHeaders($etag);
-                imagepng($png);
+                # did not find a tile - return an empty (transparent) tile
+                # TODO properly
+                img = Image.new('RGBA',(256, 256))
+                draw = ImageDraw.draw(img)
+                draw.rectangle([0, 0, 256, 256], fill=(0, 0, 0, 127))
+                data = img.tobytes('PNG')
+                #$png = imagecreatetruecolor(256, 256);
+                #imagesavealpha($png, true);
+                #$trans_colour = imagecolorallocatealpha($png, 0, 0, 0, 127);
+                #imagefill($png, 0, 0, $trans_colour);
+                #imagepng($png);
 
-            } else {
+                response.set_header('Content-type', 'image/png')
+                # TODO
+                #self.cachingHeaders($etag);
 
-                // Hooray, found a tile!
-                // - figure out which format (jpeg or png) it is in
-                $result = self.db->query('select value from metadata where name="format"');
-                $resultdata = $result->fetchColumn();
-                $format = isset($resultdata) && $resultdata !== FALSE ? $resultdata : 'png';
-                if ($format == 'jpg') {
-                    $format = 'jpeg';
-                }
+            else:
 
-                // - serve the tile
-                header('Content-type: image/' . $format);
-                self.cachingHeaders($etag);
-                print $data;
+                # Hooray, found a tile!
+                # - figure out which format (jpeg or png) it is in
+                data = data[0]
+                cur.execute('select value from metadata where name="format"')
+                result = cur.fetchone()
+                if result:
+                    fmt = result[0]
+                else:
+                    fmt = 'png'
+                if fmt == 'jpg':
+                    fmt = 'jpeg'
 
-            }
+                # - serve the tile
+                response.set_header('Content-type', 'image/' + fmt)
+                # TODO
+                #self.cachingHeaders($etag);
 
-            // done
-            self.closeDB();
-        }
-        catch( PDOException $e ) {
-            self.closeDB();
-            self.error(500, 'Error querying the database: ' . $e->getMessage());
-        }
-    }
+            self.closeDB()
+            return data
+
+        except sqlite3.DatabaseError as e:
+            self.closeDB()
+            abort(500, 'Error querying the database: ' + e.message)
 
     def getUTFgrid():
-        self.openDB();
+        self.openDB()
 
-        try {
-            $flip = true;
-            if (self.is_tms) {
-                self.tileset = substr(self.tileset, 0, strlen(self.tileset) - 4);
-                $flip = false;
-            }
+        try:
+            flip = True
+            if self.is_tms:
+                self.tileset = self.tileset[:len(self.tileset) - 4]
+                flip = False
 
-            $result = self.db->query('select grid as g from grids where zoom_level=' . self.z . ' and tile_column=' . self.x . ' and tile_row=' . self.y);
+            cur = db.cursor()
+            cur.execute('select grid as g from grids where zoom_level=' + self.z + ' and tile_column=' + self.x + ' and tile_row=' + self.y)
+            data = cur.fetchone()
 
-            $data = $result->fetchColumn();
-            if (!isset($data) || $data === FALSE) {
-                // nothing found - return empty JSON object
-                return "{}";
-            } else {
-                // get the gzipped json from the database
-                $grid = gzuncompress($data);
+            if not data:
+                # nothing found - return empty JSON object
+                return "{}"
+            else:
+                data = data[0]
+                # get the gzipped json from the database
+                grid = zlib.decompress(data[0])
 
-                // manually add the data for the interactivity layer by means of string manipulation
-                // to prevent a bunch of costly calls to json_encode & json_decode
-                //
-                // first, strip off the last '}' character
-                $grid = substr(trim($grid),0,-1);
-                // then, add a new key labelled 'data'
-                $grid .= ',"data":{';
+                # manually add the data for the interactivity layer by means of string manipulation
+                # to prevent a bunch of costly calls to json_encode & json_decode
+                #
+                # first, strip off the last '}' character
+                grid = grid.strip()[:-1]
+                # then, add a new key labelled 'data'
+                grid += ',"data":{'
 
-                // stuff that key with the actual data
-                $result = self.db->query('select key_name as key, key_json as json from grid_data where zoom_level=' . self.z . ' and tile_column=' . self.x . ' and tile_row=' . self.y);
-                while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-                    $grid .= '"' . $row['key'] . '":' . $row['json'] . ',';
-                }
+                # stuff that key with the actual data
+                cur = db.cursor()
+                cur.execute('select key_name as key, key_json as json from grid_data where zoom_level=' + self.z + ' and tile_column=' + self.x + ' and tile_row=' + self.y)
+                result = cur.fetchall()
+                for row in result:
+                    grid += '"' + row[0] + '":' + row[1] + ','
 
-                // finish up
-                $grid = rtrim($grid,',') . "}}";
+                # finish up
+                grid = grid.rstrip(',') + "}}"
 
-                // done
-                return $grid;
-            }
-        }
-        catch( PDOException $e ) {
-            self.closeDB();
-            self.error(500, 'Error querying the database: ' . $e->getMessage());
-        }
-    }
+                # done
+                return grid
+        except sqlite3.DatabaseError as e:
+            self.closeDB()
+            self.error(500, 'Error querying the database: ' + e.message)
 
-    def tileJson($layer, $callback):
-        self.layer = $layer;
-        self.openDB();
-        try {
-            $tilejson = array();
-            $tilejson['tilejson'] = "2.0.0";
-            $tilejson['scheme'] = "xyz";
+    def tileJson(layer, callback):
+        self.layer = layer
+        self.openDB()
+        try:
+            tilejson = {}
+            tilejson['tilejson'] = "2.0.0"
+            tilejson['scheme'] = "xyz"
 
-            $result = self.db->query('select name, value from metadata');
-            while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-                $key = trim($row['name']);
-                $value = $row['value'];
-                if (in_array($key, array('maxzoom', 'minzoom'))) {
-                    $value = intval($value);
-                }
-                $tilejson[$key] = $value;
-            }
-            if (array_key_exists('bounds', $tilejson)) {
-                $tilejson['bounds'] = array_map('floatval', explode(',', $tilejson['bounds']));
-            }
-            if (array_key_exists('center', $tilejson)) {
-                $tilejson['center'] = array_map('floatval', explode(',', $tilejson['center']));
-            }
+            cur = db.cursor()
+            cur.execute('select name, value from metadata')
+            result = cur.fetchall()
+            for row in result:
+                key = row[0]
+                value = row[1]
+                if key in ['maxzoom', 'minzoom']:
+                    value = int(value)
+                tilejson[key] = value
 
-            // find out the absolute URL to this script
-            $protocol = empty($_SERVER["HTTPS"])?"http":"https";
-            $server_url = $protocol . "://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["REQUEST_URI"]);
+            if 'bounds' in tilejson:
+                tilejson['bounds'] = [float(b) for b in tilejson['bounds'].split(',')]
+            if 'center' in tilejson:
+                tilejson['center'] = [float(c) for c in tilejson['center'].split(',')]
 
-            $tilejson['tiles'] = array(
-                $server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.png"
-            );
-            $tilejson['grids'] = array(
-                $server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.json"
-            );
+            # TODO
+            ## find out the absolute URL to this script
+            #$protocol = empty($_SERVER["HTTPS"])?"http":"https";
+            #$server_url = $protocol . "://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["REQUEST_URI"]);
 
-            if ($callback !== null) {
-                $json = "$callback(" . json_encode($tilejson) . ")";
-            } else {
-                $json = json_encode($tilejson);
-            }
+            #$tilejson['tiles'] = array(
+            #    $server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.png"
+            #);
+            #$tilejson['grids'] = array(
+            #    $server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.json"
+            #);
 
-            ini_set('zlib.output_compression', 'Off');
-            header('Content-Type: application/json');
-            header('Content-Length: ' . strlen($json));
-            self.cachingHeaders();
+            if callback is not None:
+                json = callback + "(" + json_encode(tilejson) + ")"
+            else:
+                json = json_encode(tilejson)
 
-            echo $json;
-        }
-        catch( PDOException $e ) {
-            self.closeDB();
-            self.error(500, 'Error querying the database: ' . $e->getMessage());
-        }
-    }
+            # TODO
+            #ini_set('zlib.output_compression', 'Off')
+            response.set_header('Content-type', 'application/json')
+            response.set_header('Content-Length', len(json))
+            # TODO
+            #self.cachingHeaders();
 
-}
+            return json
 
+        except sqlite3.DatabaseError as e:
+            self.closeDB()
+            self.error(500, 'Error querying the database: ' . e.message)
 
 app.run()
 
