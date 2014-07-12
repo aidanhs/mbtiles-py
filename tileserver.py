@@ -17,7 +17,7 @@
 import bottle
 from bottle import abort
 
-import sqlite3, os, re
+import sqlite3, os, re, glob
 app = bottle.Bottle()
 
 app.router.add_filter('_identifier', lambda c: re.compile(r'[\d_-\s]+'))
@@ -54,30 +54,31 @@ class ServerInfoController(BaseClass):
         super(ServerInfoController, self).__init__(*args, **kwargs)
 
     def hello(self):
+
+        ret = ''
+
         #global $r;
 
+        # TODO
         #$x = new TileMapServiceController();
         #echo "This is the " . $x->server_name . " version " . $x->server_version;
-        #echo "<br /><br />Try these!";
-        #echo "<ul>";
-        #foreach ($r->routes as $route) {
-        #    if (strlen($route->url) > 0 && strpos($route->url, ":layer") === false) {
-        #        $url = $route->url;
-        #        echo "<li><a href='$url'>$url</a></li>";
-        #    }
-        #}
 
-        #$layers = glob("*.mbtiles");
-        #foreach ($layers as $l) {
-        #    $l = str_replace(".mbtiles", "", $l);
-        #    $urls = array("$l/2/1/1.png", "$l.tilejson", "$l/2/1/1.json");
-        #    foreach ($urls as $u) {
-        #        echo "<li><a href='$u'>$u</a></li>";
-        #    }
-        #}
-        #echo "</ul>";
+        ret += "<br /><br />Try these!"
+        ret += "<ul>"
+        for route in app.routes:
+            if len(route.rule) > 1 and ":layer" not in route.url:
+                ret += "<li><a href='%s'>%s</a></li>" % (route.rule, route.rule)
 
-        return "<br/><br/>PS: non-exhaustive list, see source for details"
+        layers = glob.glob("*.mbtiles")
+        for l in layers:
+            l = l.replace(".mbtiles", "")
+            urls = [l + u for u in ["/2/1/1.png", ".tilejson", "/2/1/1.json"]]
+            for u in urls:
+                ret += "<li><a href='%s'>%s</a></li>" % (u, u)
+        ret += "</ul>"
+        ret += "<br/><br/>PS: non-exhaustive list, see source for details"
+
+        return ret
 
 app.run()
 
