@@ -15,9 +15,9 @@
 #header('Access-Control-Allow-Origin: *');
 
 import bottle
-from bottle import abort
+from bottle import abort, response
 
-import sqlite3, os, re, glob
+import sqlite3, os, re, glob, indent, cgi
 app = bottle.Bottle()
 
 app.router.add_filter('_identifier', lambda c: re.compile(r'[\d_-\s]+'))
@@ -109,115 +109,96 @@ class TileMapServiceController(BaseClass):
         base = self.getBaseUrl();
 
         header('Content-type: text/xml');
-        echo <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<Services>
-    <TileMapService title="{self.server_name}" version="{self.server_version}" href="${base}{self.server_version}/" />
-</Services>
-EOF;
-    }
+        return indent.dedent("""\
+            <?xml version="1.0" encoding="UTF-8" ?>
+            <Services>
+                <TileMapService title="%s" version="%s" href="%s%s/" />
+            </Services>""" % (self.server_name, self.server_version, base, self.server_version))
 
     def service():
-        $base = self.getBaseUrl();
+        base = self.getBaseUrl()
 
-        header('Content-type: text/xml');
-        echo "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
-        echo "\n<TileMapService version=\"1.0.0\" services=\"$base\">";
-        echo "\n\t<Title>{self.server_name} v{self.server_version}</Title>";
-        echo "\n\t<Abstract />";
+        response.set_header('Content-type', 'text/xml')
+        ret = ''
+        ret += "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
+        ret += "\n<TileMapService version=\"1.0.0\" services=\"%s\">" % (base,);
+        ret += "\n\t<Title>{self.server_name} v{self.server_version}</Title>";
+        ret += "\n\t<Abstract />";
 
-        echo "\n\t<TileMaps>";
+        ret += "\n\t<TileMaps>";
 
-        if ($handle = opendir('.')) {
-            while (($file = readdir($handle)) !== false) {
-                if (preg_match('/^[\w\d_-]+\.mbtiles$/', $file) && is_file($file)) {
-                    try {
-                        $db = new PDO('sqlite:' . $file);
-                        $params = self.readparams($db);
-                        $name = htmlspecialchars($params['name']);
-                        $identifier = str_replace('.mbtiles', '', $file);
-                        echo "\n\t\t<TileMap title=\"$name\" srs=\"OSGEO:41001\" profile=\"global-mercator\" href=\"${base}1.0.0/$identifier\" />";
-                    }
-                    catch( PDOException $e ) {
-                        // nothing
-                    }
-                }
-            }
-        }
+        for dbfile in glob.glob('*.mbtiles'):
+            if not os.path.isfile(dbfile):
+                continue
+            try:
+                aidan
+                db = sqlite3.connect(dbfile)
+                params = self.readparams(db);
+                name = cgi.escape(params['name']).encode('ascii', 'xmlcharrefreplace')
+                identifier = dbfile.replace('.mbtiles', '')
+                ret += "\n\t\t<TileMap title=\"%s\" srs=\"OSGEO:41001\" profile=\"global-mercator\" href=\"%s1.0.0/%s\" />" % (name, base, identifier);
+            except DatabaseError as e:
+                pass
 
-        echo "\n\t</TileMaps>";
-        echo "\n</TileMapService>";
-    }
+        ret += "\n\t</TileMaps>";
+        ret += "\n</TileMapService>";
+        return ret
 
-    def resource($layer):
-        try {
-            self.layer = $layer;
+    def resource(layer):
+        ret = ''
+        try:
+            self._layer = layer;
             self.openDB();
-            $params = self.readparams(self.db);
+            params = self.readparams(self._db);
 
-            $title = htmlspecialchars($params['name']);
-            $description = htmlspecialchars($params['description']);
-            $format = $params['format'];
+            title = htmlspecialchars(params['name']);
+            description = htmlspecialchars(params['description']);
+            fmt = params['format'];
 
-            switch (strtolower($format)) {
-                case "jpg" :
-                case "jpeg" :
-                    $mimetype = "image/jpeg";
-                    break;
+            if fmt.lower in ["jpg","jpeg"]:
+                mimetype = "image/jpeg";
+            else:
+                format = "png";
+                mimetype = "image/png";
 
-                default :
-                case "png" :
-                    $format = "png";
-                    $mimetype = "image/png";
-                    break;
-            }
+            base = self.getBaseUrl();
+            response.set_header('Content-type', 'text/xml')
+            ret += indent.dedent("""\
+                <?xml version="1.0" encoding="UTF-8" ?>
+                <TileMap version="1.0.0" tilemapservice="%s1.0.0/">
+                    <Title>%s</Title>
+                    <Abstract>%s</Abstract>
+                    <SRS>OSGEO:41001</SRS>
+                    <BoundingBox minx="-180" miny="-90" maxx="180" maxy="90" />
+                    <Origin x="0" y="0"/>
+                    <TileFormat width="256" height="256" mime-type="%s" extension="%s"/>
+                    <TileSets profile="global-mercator">""" % (base, title, description, mimetype, fmt))
 
-            $base = self.getBaseUrl();
-            header('Content-type: text/xml');
-            echo <<<EOF
-<?xml version="1.0" encoding="UTF-8" ?>
-<TileMap version="1.0.0" tilemapservice="{$base}1.0.0/">
-    <Title>$title</Title>
-    <Abstract>$description</Abstract>
-    <SRS>OSGEO:41001</SRS>
-    <BoundingBox minx="-180" miny="-90" maxx="180" maxy="90" />
-    <Origin x="0" y="0"/>
-    <TileFormat width="256" height="256" mime-type="$mimetype" extension="$format"/>
-    <TileSets profile="global-mercator">
-EOF;
-            foreach (self.readzooms(self.db) as $zoom) {
-                $href = $base . "1.0.0/" . self.layer . "/" . $zoom;
-                $units_pp = 78271.516 / pow(2, $zoom);
+            for zoom in self.readzooms(self.db):
+                href = base + "1.0.0/" + self.layer + "/" + zoom;
+                units_pp = 78271.516 / pow(2, zoom);
 
-                echo "<TileSet href=\"$href\" units-per-pixel=\"$units_pp\" order=\"$zoom\" />";
-            }
-            echo <<<EOF
+                ret += "<TileSet href=\"%s\" units-per-pixel=\"%s\" order=\"%s\" />" % (href, units_pp, zoom);
+            ret += indent.dedent("""\
+                    </TileSets>
+                </TileMap>""")
+        except DatabaseError as e:
+            abort(404, "Incorrect tileset name: " . self.layer)
 
-    </TileSets>
-</TileMap>
-EOF;
-        }
-        catch( PDOException $e ) {
-            self.error(404, "Incorrect tileset name: " . self.layer);
-        }
-    }
+    def readparams(db):
+        params = {};
+        cur = db.cursor()
+        cur.execute('select name, value from metadata')
+        result = cur.fetchall()
+        for name, value in result:
+            params[name] = value;
+        return params;
 
-    def readparams($db):
-        $params = array();
-        $result = $db->query('select name, value from metadata');
-        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-            $params[$row['name']] = $row['value'];
-        }
-        return $params;
-    }
-
-    def readzooms($db):
-        $params = self.readparams($db);
-        $minzoom = $params['minzoom'];
-        $maxzoom = $params['maxzoom'];
-
-        return range($minzoom, $maxzoom);
-    }
+    def readzooms(db):
+        params = self.readparams(db);
+        minzoom = params['minzoom'];
+        maxzoom = params['maxzoom'];
+        return range(minzoom, maxzoom + 1);
 
     def getBaseUrl():
         return "http://localhost:8080/"
