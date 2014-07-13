@@ -31,6 +31,23 @@ def htmlspecialchars(txt):
 app = bottle.Bottle()
 
 def run():
+    bottle.debug(True)
+
+    parser = argparse.ArgumentParser(description='Tile server', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--port', '-p', type=int, default=8080, help='port number')
+    args = parser.parse_args()
+
+    setup_routes(app)
+
+    port = args.port
+    try:
+        import gevent
+        app.run(host='127.0.0.1', port=port, server='gevent')
+    except ImportError:
+        print "WARNING: falling back to single threaded mode"
+        app.run(host='127.0.0.1', port=port)
+
+def setup_routes(app):
 
     idfn = lambda v: v
     def identifier_filter(config):
@@ -83,19 +100,6 @@ def run():
             callback = request.query.values()[1]
         return MapTileController().tileJson(layer=layer, callback=callback)
 
-    bottle.debug(True)
-
-    parser = argparse.ArgumentParser(description='Tile server', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--port', '-p', type=int, default=8080, help='port number')
-    args = parser.parse_args()
-
-    port = args.port
-    try:
-        import gevent
-        app.run(host='127.0.0.1', port=port, server='gevent')
-    except ImportError:
-        print "WARNING: falling back to single threaded mode"
-        app.run(host='127.0.0.1', port=port)
 
 class BaseClass(object):
 
