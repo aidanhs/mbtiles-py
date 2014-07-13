@@ -22,72 +22,68 @@ from wsgiref.handlers import format_date_time
 from PIL import Image, ImageDraw
 json_encode = json.dumps
 
-app = bottle.Bottle()
+def run():
+    app = bottle.Bottle()
 
-identity = lambda x: x
-def identifier_filter(config):
-    regexp = r'[-\d_\w\s]+'
-    def to_python(val):
-        return val
-    def to_url(val):
-        return val
-    return regexp, to_python, to_url
-def number_filter(config):
-    regexp = r'\d+'
-    def to_python(val):
-        return val
-    def to_url(val):
-        return val
-    return regexp, to_python, to_url
-app.router.add_filter('_identifier', identifier_filter)
+    identity = lambda x: x
+    def identifier_filter(config):
+        regexp = r'[-\d_\w\s]+'
+        def to_python(val):
+            return val
+        def to_url(val):
+            return val
+        return regexp, to_python, to_url
+    app.router.add_filter('_identifier', identifier_filter)
 
-def htmlspecialchars(txt):
-    return txt.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
+    def htmlspecialchars(txt):
+        return txt.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
 
-@app.route('/')
-def root():
-    return ServerInfoController().hello()
+    @app.route('/')
+    def root():
+        return ServerInfoController().hello()
 
-@app.route('/root.xml')
-def rootxml():
-    return TileMapServiceController().root()
+    @app.route('/root.xml')
+    def rootxml():
+        return TileMapServiceController().root()
 
-@app.route('/1.0.0')
-def vsn():
-    return TileMapServiceController().service()
+    @app.route('/1.0.0')
+    def vsn():
+        return TileMapServiceController().service()
 
-@app.route('/1.0.0/<layer:_identifier>')
-def vsnlayer(layer):
-    return TileMapServiceController().resource(layer=layer)
+    @app.route('/1.0.0/<layer:_identifier>')
+    def vsnlayer(layer):
+        return TileMapServiceController().resource(layer=layer)
 
-@app.route("/1.0.0/<layer:_identifier>/<z:int>/<x:int>/<y:int>.<ext:re:(png|jpg|jpeg|json)>")
-def servetmstile(layer, z, x, y, ext):
-    return MapTileController().serveTmsTile(tileset=layer, x=x, y=y, z=z, ext=ext)
+    @app.route("/1.0.0/<layer:_identifier>/<z:int>/<x:int>/<y:int>.<ext:re:(png|jpg|jpeg|json)>")
+    def servetmstile(layer, z, x, y, ext):
+        return MapTileController().serveTmsTile(tileset=layer, x=x, y=y, z=z, ext=ext)
 
-@app.route("/<layer:_identifier>/<z:int>/<x:int>/<y:int>.<ext:re:(png|jpg|jpeg|json)>")
-def servetile1(layer, z, x, y, ext):
-    return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext)
+    @app.route("/<layer:_identifier>/<z:int>/<x:int>/<y:int>.<ext:re:(png|jpg|jpeg|json)>")
+    def servetile1(layer, z, x, y, ext):
+        return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext)
 
-@app.route("/<layer:_identifier>/<z:int>/<x:int>/<y:int>.<ext:re:(json|jsonp)>")
-def servetile2(layer, z, x, y, ext):
-    callback = None
-    if request.query != '':
-        callback = request.query.values()[1]
-    return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext, callback=callback)
+    @app.route("/<layer:_identifier>/<z:int>/<x:int>/<y:int>.<ext:re:(json|jsonp)>")
+    def servetile2(layer, z, x, y, ext):
+        callback = None
+        if request.query != '':
+            callback = request.query.values()[1]
+        return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext, callback=callback)
 
-@app.route("/<layer:_identifier>/<z:int>/<x:int>/<y:int>.grid.<ext:re:(json|jsonp)>")
-def servetile3(layer, z, x, y, ext):
-    callback = None
-    if request.query != '':
-        callback = request.query.values()[1]
-    return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext, callback=callback)
+    @app.route("/<layer:_identifier>/<z:int>/<x:int>/<y:int>.grid.<ext:re:(json|jsonp)>")
+    def servetile3(layer, z, x, y, ext):
+        callback = None
+        if request.query != '':
+            callback = request.query.values()[1]
+        return MapTileController().serveTile(layer=layer, x=x, y=y, z=z, ext=ext, callback=callback)
 
-@app.route("/<layer:_identifier>.tile<:re:(json|jsonp)>")
-def tilejson(layer):
-    callback = None
-    if request.query.values():
-        callback = request.query.values()[1]
-    return MapTileController().tileJson(layer=layer, callback=callback)
+    @app.route("/<layer:_identifier>.tile<:re:(json|jsonp)>")
+    def tilejson(layer):
+        callback = None
+        if request.query.values():
+            callback = request.query.values()[1]
+        return MapTileController().tileJson(layer=layer, callback=callback)
+
+    app.run()
 
 class BaseClass(object):
 
@@ -512,4 +508,5 @@ class MapTileController(BaseClass):
             self.closeDB()
             abort(500, 'Error querying the database: ' + e.message)
 
-app.run()
+if __name__ == '__main__':
+    run()
