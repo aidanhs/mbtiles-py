@@ -15,7 +15,7 @@
 #header('Access-Control-Allow-Origin: *');
 
 import sqlite3, os, glob, textwrap, zlib, json, hashlib, time, cStringIO, sys
-import posixpath, urllib
+import posixpath, urllib, argparse
 from wsgiref.handlers import format_date_time
 
 from gevent import monkey
@@ -85,9 +85,11 @@ def run():
 
     bottle.debug(True)
 
-    port = 8080
-    if len(sys.argv) > 1:
-        port = int(sys.argv[0])
+    parser = argparse.ArgumentParser(description='Tile server', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--port', '-p', type=int, default=8080, help='port number')
+    args = parser.parse_args()
+
+    port = args.port
     try:
         import gevent
         app.run(host='127.0.0.1', port=port, server='gevent')
