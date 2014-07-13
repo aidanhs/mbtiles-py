@@ -20,7 +20,6 @@ from bottle import abort, response, request
 import sqlite3, os, glob, textwrap, zlib, json, hashlib, time, cStringIO
 from wsgiref.handlers import format_date_time
 from PIL import Image, ImageDraw
-json_encode = json.dumps
 
 def run():
     app = bottle.Bottle()
@@ -303,7 +302,7 @@ class MapTileController(BaseClass):
         etag = self.etag("json")
         self.checkCache(etag)
 
-        json = self.getUTFgrid()
+        jsongrid = self.getUTFgrid()
 
         # TODO
         # disable ZLIB ouput compression
@@ -311,17 +310,17 @@ class MapTileController(BaseClass):
 
         # serve JSON file
         response.set_header('Content-type', 'application/json; charset=utf-8')
-        response.set_header('Content-Length', len(json))
+        response.set_header('Content-Length', len(jsongrid))
         self.cachingHeaders(etag)
 
-        return json;
+        return jsongrid
 
     def jsonpTile(self):
         etag = self.etag("jsonp")
         self.checkCache(etag)
 
-        json = self.getUTFgrid()
-        jsonp = self.callback + "(" + json + ")"
+        jsongrid = self.getUTFgrid()
+        jsonpgrid = self.callback + "(" + jsongrid + ")"
 
         # TODO
         # disable ZLIB output compression
@@ -329,10 +328,10 @@ class MapTileController(BaseClass):
 
         # serve JSON file
         response.set_header('Content-type', 'application/json; charset=utf-8')
-        response.set_header('Content-Length', len(json))
+        response.set_header('Content-Length', len(jsonpgrid))
         self.cachingHeaders(etag)
 
-        return jsonp
+        return jsonpgrid
 
     def etag(self, etag_type):
         return '"' + hashlib.sha1(
@@ -492,17 +491,17 @@ class MapTileController(BaseClass):
             #);
 
             if callback is not None:
-                json = callback + "(" + json_encode(tilejson) + ")"
+                ret = callback + "(" + json.dumps(tilejson) + ")"
             else:
-                json = json_encode(tilejson)
+                ret = json.dumps(tilejson)
 
             # TODO
             #ini_set('zlib.output_compression', 'Off')
             response.set_header('Content-type', 'application/json')
-            response.set_header('Content-Length', len(json))
+            response.set_header('Content-Length', len(ret))
             self.cachingHeaders()
 
-            return json
+            return ret
 
         except sqlite3.DatabaseError as e:
             self.closeDB()
