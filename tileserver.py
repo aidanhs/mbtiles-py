@@ -14,17 +14,23 @@
 # TODO
 #header('Access-Control-Allow-Origin: *');
 
+from gevent import monkey
+monkey.patch_all()
+
 import bottle
 from bottle import abort, response, request
 
-import sqlite3, os, glob, textwrap, zlib, json, hashlib, time, cStringIO
+import sqlite3, os, glob, textwrap, zlib, json, hashlib, time, cStringIO, sys
 from wsgiref.handlers import format_date_time
 from PIL import Image, ImageDraw
 
-def run():
-    app = bottle.Bottle()
+def htmlspecialchars(txt):
+    return txt.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
 
-    identity = lambda x: x
+app = bottle.Bottle()
+
+def run():
+
     def identifier_filter(config):
         regexp = r'[-\d_\w\s]+'
         def to_python(val):
@@ -33,9 +39,6 @@ def run():
             return val
         return regexp, to_python, to_url
     app.router.add_filter('_identifier', identifier_filter)
-
-    def htmlspecialchars(txt):
-        return txt.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
 
     @app.route('/')
     def root():
@@ -82,7 +85,17 @@ def run():
             callback = request.query.values()[1]
         return MapTileController().tileJson(layer=layer, callback=callback)
 
-    app.run()
+    bottle.debug(True)
+
+    port = 8080
+    if len(sys.argv) > 1:
+        port = int(sys.argv[0])
+    try:
+        import gevent
+        app.run(host='127.0.0.1', port=port, server='gevent')
+    except ImportError:
+        print "WARNING: falling back to single threaded mode"
+        app.run(host='127.0.0.1', port=port)
 
 class BaseClass(object):
 
