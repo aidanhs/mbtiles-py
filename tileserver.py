@@ -34,7 +34,7 @@ def run():
     parser = argparse.ArgumentParser(description='Tile server', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--port', '-p', type=int, default=8080, help='port number')
     parser.add_argument('--mount', '-m', default=None, help='relative url for tile server e.g. /server/')
-    parser.add_argument('--static', '-s', default=None, help='relative url for tile server e.g. /server/')
+    parser.add_argument('--static', '-s', default=None, help='directory of static to mount at /')
     args = parser.parse_args()
 
     app = setup_server_routes()
@@ -48,6 +48,17 @@ def run():
         print "Attempting to mount server at " + args.mount
         root = bottle.Bottle()
         root.mount(args.mount, app)
+
+    if args.static is not None:
+        if args.mount is None:
+            print "--mount must be specified for the tile server to be able to serve static"
+            sys.exit(1)
+        if not os.path.isdir(args.static):
+            print args.static + " is not a directory."
+            sys.exit(1)
+        @root.route('<filepath:path>')
+        def static_serve(filepath):
+            return bottle.static_file(filepath, args.static)
 
     port = args.port
     try:
