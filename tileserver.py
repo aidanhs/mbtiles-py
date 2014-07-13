@@ -512,8 +512,8 @@ class MapTileController(BaseClass):
             url_layer = urllib.quote(layer)
 
             tilejson['webpage'] = server_url
-            tilejson['tiles'] = [server_url + url_layer + "/{z}/{x}/{y}.png"]
-            tilejson['grids'] = [server_url + url_layer + "/{z}/{x}/{y}.json"]
+            tilejson['tiles'] = [server_url + '/' + url_layer + "/{z}/{x}/{y}.png"]
+            tilejson['grids'] = [server_url + '/' + url_layer + "/{z}/{x}/{y}.json"]
 
             if callback is not None:
                 ret = callback + "(" + json.dumps(tilejson) + ")"
