@@ -33,6 +33,7 @@ def run():
 
     parser = argparse.ArgumentParser(description='Tile server', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--port', '-p', type=int, default=8080, help='port number')
+    parser.add_argument('--host', default='127.0.0.1', help='host interface')
     parser.add_argument('--mount', '-m', default=None, help='relative url for tile server e.g. /server/')
     parser.add_argument('--static', '-s', default=None, help='directory of static to mount at /')
     args = parser.parse_args()
@@ -60,13 +61,12 @@ def run():
         def static_serve(filepath):
             return bottle.static_file(filepath, args.static)
 
-    port = args.port
     try:
         import gevent
-        root.run(host='127.0.0.1', port=port, server='gevent')
+        root.run(host=args.host, port=args.port, server='gevent')
     except ImportError:
         print "WARNING: falling back to single threaded mode"
-        root.run(host='127.0.0.1', port=port)
+        root.run(host=args.host, port=args.port)
 
 def setup_server_routes():
 
