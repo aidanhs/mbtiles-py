@@ -32,7 +32,6 @@ app = bottle.Bottle()
 
 def run():
 
-    #identifier_filter = lambda c: (r'[-\d_\s]+', lambda v: v, lambda v: v)
     idfn = lambda v: v
     def identifier_filter(config):
         regexp = r'[-_\d\w\s]+'
@@ -239,8 +238,9 @@ class TileMapServiceController(BaseClass):
             for zoom in range(minzoom, maxzoom + 1):
                 href = base + "1.0.0/" + self.layer + "/" + str(zoom)
                 units_pp = 78271.516 / pow(2, zoom)
-
-                ret += '<TileSet href="%s" units-per-pixel="%s" order="%s" />' % (href, units_pp, zoom)
+                ret += '<TileSet href="%s" units-per-pixel="%s" order="%s" />' % (
+                    href, units_pp, zoom
+                )
             ret += textwrap.dedent("""\t</TileSets>\n</TileMap>""")
         except sqlite3.DatabaseError:
             abort(404, "Incorrect tileset name: " + self.layer)
@@ -371,7 +371,7 @@ class MapTileController(BaseClass):
             if not data:
 
                 # did not find a tile - return an empty (transparent) tile
-                img = Image.new('RGBA',(256, 256))
+                img = Image.new('RGBA', (256, 256))
                 draw = ImageDraw.Draw(img)
                 draw.rectangle([0, 0, 256, 256], fill=(0, 0, 0, 0))
                 imgfile = cStringIO.StringIO()
