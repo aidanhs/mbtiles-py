@@ -15,7 +15,7 @@
 #header('Access-Control-Allow-Origin: *');
 
 import sqlite3, os, glob, textwrap, zlib, json, hashlib, time, cStringIO, sys
-import posixpath, urllib, argparse
+import posixpath, urllib, argparse, re
 from wsgiref.handlers import format_date_time
 
 from gevent import monkey
@@ -33,19 +33,19 @@ def run():
 
     parser = argparse.ArgumentParser(description='Tile server', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--port', '-p', type=int, default=8080, help='port number')
-    parser.add_argument('--mount', '-m', default='/', help='relative url for tile server e.g. /server/')
+    parser.add_argument('--mount', '-m', default=None, help='relative url for tile server e.g. /server/')
+    parser.add_argument('--static', '-s', default=None, help='relative url for tile server e.g. /server/')
     args = parser.parse_args()
 
     app = setup_server_routes()
-    if args.mount == '/':
+    if args.mount is None:
         root = app
     else:
-        mount = args.mount
-        if not mount.startswith('/'):
-            mount = mount + '/'
-        if not mount.endswith('/'):
-            mount += '/'
-        print "Attempting to mount server at " + mount
+        mount_re = '^/([a-zA-Z_-]+/)+$'
+        if re.match(mount_re, args.mount) is None:
+            print "Invalid path, must look like /a1/bC_/d-e/ (matching '%s')" % (mount_re,)
+            sys.exit(1)
+        print "Attempting to mount server at " + args.mount
         root = bottle.Bottle()
         root.mount(args.mount, app)
 
