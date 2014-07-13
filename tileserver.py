@@ -28,26 +28,38 @@ from PIL import Image, ImageDraw
 def htmlspecialchars(txt):
     return txt.replace("&", "&amp;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
 
-app = bottle.Bottle()
-
 def run():
     bottle.debug(True)
 
     parser = argparse.ArgumentParser(description='Tile server', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--port', '-p', type=int, default=8080, help='port number')
+    parser.add_argument('--mount', '-m', default='/', help='relative url for tile server e.g. /server/')
     args = parser.parse_args()
 
-    setup_routes(app)
+    app = setup_server_routes()
+    if args.mount == '/':
+        root = app
+    else:
+        mount = args.mount
+        if not mount.startswith('/'):
+            mount = mount + '/'
+        if not mount.endswith('/'):
+            mount += '/'
+        print "Attempting to mount server at " + mount
+        root = bottle.Bottle()
+        root.mount(args.mount, app)
 
     port = args.port
     try:
         import gevent
-        app.run(host='127.0.0.1', port=port, server='gevent')
+        root.run(host='127.0.0.1', port=port, server='gevent')
     except ImportError:
         print "WARNING: falling back to single threaded mode"
-        app.run(host='127.0.0.1', port=port)
+        root.run(host='127.0.0.1', port=port)
 
-def setup_routes(app):
+def setup_server_routes():
+
+    app = bottle.Bottle()
 
     idfn = lambda v: v
     def identifier_filter(config):
@@ -57,7 +69,7 @@ def setup_routes(app):
 
     @app.route('/')
     def root():
-        return ServerInfoController().hello()
+        return ServerInfoController(app.routes).hello()
 
     @app.route('/root.xml')
     def rootxml():
@@ -100,6 +112,8 @@ def setup_routes(app):
             callback = request.query.values()[1]
         return MapTileController().tileJson(layer=layer, callback=callback)
 
+    return app
+
 
 class BaseClass(object):
 
@@ -124,7 +138,8 @@ class BaseClass(object):
 
 class ServerInfoController(BaseClass):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, app_routes, *args, **kwargs):
+        self.app_routes = app_routes
         super(ServerInfoController, self).__init__(*args, **kwargs)
 
     def hello(self):
@@ -136,7 +151,7 @@ class ServerInfoController(BaseClass):
 
         ret += "<br /><br />Try these!"
         ret += "<ul>"
-        for route in app.routes:
+        for route in self.app_routes:
             if len(route.rule) > 1 and "<layer" not in route.rule:
                 ret += "<li><a href='%s'>%s</a></li>" % (route.rule, route.rule)
 
