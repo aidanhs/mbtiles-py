@@ -14,14 +14,15 @@
 # TODO
 #header('Access-Control-Allow-Origin: *');
 
+import sqlite3, os, glob, textwrap, zlib, json, hashlib, time, cStringIO, sys
+import posixpath, urllib
+from wsgiref.handlers import format_date_time
+
 from gevent import monkey
 monkey.patch_all()
-
 import bottle
 from bottle import abort, response, request
 
-import sqlite3, os, glob, textwrap, zlib, json, hashlib, time, cStringIO, sys
-from wsgiref.handlers import format_date_time
 from PIL import Image, ImageDraw
 
 def htmlspecialchars(txt):
@@ -491,17 +492,14 @@ class MapTileController(BaseClass):
             if 'center' in tilejson:
                 tilejson['center'] = [float(c) for c in tilejson['center'].split(',')]
 
-            # TODO
             ## find out the absolute URL to this script
-            #$protocol = empty($_SERVER["HTTPS"])?"http":"https";
-            #$server_url = $protocol . "://" . $_SERVER["HTTP_HOST"] . dirname($_SERVER["REQUEST_URI"]);
+            parts = request.urlparts
+            server_url = parts.scheme + "://" + parts.netloc + posixpath.dirname(parts.path)
+            url_layer = urllib.quote(layer)
 
-            #$tilejson['tiles'] = array(
-            #    $server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.png"
-            #);
-            #$tilejson['grids'] = array(
-            #    $server_url . "/" . urlencode($layer) . "/{z}/{x}/{y}.json"
-            #);
+            tilejson['webpage'] = server_url
+            tilejson['tiles'] = [server_url + url_layer + "/{z}/{x}/{y}.png"]
+            tilejson['grids'] = [server_url + url_layer + "/{z}/{x}/{y}.json"]
 
             if callback is not None:
                 ret = callback + "(" + json.dumps(tilejson) + ")"
