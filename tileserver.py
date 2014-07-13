@@ -17,7 +17,7 @@
 import bottle
 from bottle import abort, response, request
 
-import sqlite3, os, glob, textwrap, zlib, json, hashlib, time
+import sqlite3, os, glob, textwrap, zlib, json, hashlib, time, cStringIO
 from wsgiref.handlers import format_date_time
 from PIL import Image, ImageDraw
 json_encode = json.dumps
@@ -380,17 +380,13 @@ class MapTileController(BaseClass):
             if not data:
 
                 # did not find a tile - return an empty (transparent) tile
-                # TODO properly
                 img = Image.new('RGBA',(256, 256))
                 draw = ImageDraw.Draw(img)
-                draw.rectangle([0, 0, 256, 256], fill=(0, 0, 0, 127))
-                data = img.tobytes('PNG')
-                #$png = imagecreatetruecolor(256, 256);
-                #imagesavealpha($png, true);
-                #$trans_colour = imagecolorallocatealpha($png, 0, 0, 0, 127);
-                #imagefill($png, 0, 0, $trans_colour);
-                #imagepng($png);
-
+                draw.rectangle([0, 0, 256, 256], fill=(0, 0, 0, 0))
+                imgfile = cStringIO.StringIO()
+                img.save(imgfile, 'png')
+                data = imgfile.getvalue()
+                imgfile.close()
                 response.set_header('Content-type', 'image/png')
                 self.cachingHeaders(etag)
 
