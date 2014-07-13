@@ -17,7 +17,8 @@
 import bottle
 from bottle import abort, response, request
 
-import sqlite3, os, glob, textwrap, zlib, json
+import sqlite3, os, glob, textwrap, zlib, json, hashlib, time
+from wsgiref.handlers import format_date_time
 from PIL import Image, ImageDraw
 json_encode = json.dumps
 
@@ -118,9 +119,8 @@ class ServerInfoController(BaseClass):
 
         ret = ''
 
-        # TODO
-        #$x = new TileMapServiceController();
-        #echo "This is the " . $x->server_name . " version " . $x->server_version;
+        x = TileMapServiceController()
+        ret += "This is the " + x.server_name + " version " + x.server_version
 
         ret += "<br /><br />Try these!"
         ret += "<ul>"
@@ -304,9 +304,8 @@ class MapTileController(BaseClass):
         return self.serveTile(tileset + "-tms", x, y, z, ext, callback)
 
     def jsonTile(self):
-        # TODO
-        #etag = self.etag("json");
-        #self.checkCache(etag);
+        etag = self.etag("json")
+        self.checkCache(etag)
 
         json = self.getUTFgrid()
 
@@ -317,15 +316,13 @@ class MapTileController(BaseClass):
         # serve JSON file
         response.set_header('Content-type', 'application/json; charset=utf-8')
         response.set_header('Content-Length', len(json))
-        # TODO
-        #self.cachingHeaders(etag);
+        self.cachingHeaders(etag)
 
         return json;
 
     def jsonpTile(self):
-        # TODO
-        #$etag = self.etag("jsonp");
-        #self.checkCache($etag);
+        etag = self.etag("jsonp")
+        self.checkCache(etag)
 
         json = self.getUTFgrid()
         jsonp = self.callback + "(" + json + ")"
@@ -337,43 +334,38 @@ class MapTileController(BaseClass):
         # serve JSON file
         response.set_header('Content-type', 'application/json; charset=utf-8')
         response.set_header('Content-Length', len(json))
-        # TODO
-        #self.cachingHeaders(etag);
+        self.cachingHeaders(etag)
 
         return jsonp
 
-    # TODO
-    #def etag($type):
-    #    return sha1(sprintf("%s-%s-%s-%s-%s-%s", self.tileset, self.x, self.y, self.z, $type, filemtime(self.getMBTilesName())));
-    #}
+    def etag(self, etag_type):
+        return '"' + hashlib.sha1(
+            "%s-%s-%s-%s-%s-%s" % (
+                self.tileset, self.x, self.y, self.z,
+                etag_type, os.path.getmtime(self.getMBTilesName())
+            )
+        ).hexdigest() + '"'
 
-    # TODO
-    #def checkCache($etag):
-    #    if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && $_SERVER['HTTP_IF_NONE_MATCH'] == $etag) {
-    #        header('HTTP/1.1 304 Not Modified');
-    #        exit();
-    #    }
-    #}
+    def checkCache(self, etag):
+        if 'If-None-Match' in request.headers and request.headers['If-None-Match'] == etag:
+            abort(304, 'Not Modified')
 
-    # TODO
-    #def cachingHeaders($etag=null):
-    #    $day = 60*60*24;
-    #    $expires = 1 * $day;
+    def cachingHeaders(self, etag=None):
+        day = 60*60*24
+        expires_secs = 1 * day
+        expires = format_date_time(time.time() + expires_secs)
 
-    #    // For an explanation on how the expires header and the etag header work together,
-    #    // please see http://stackoverflow.com/a/500103/426224
-    #    header("Expires: " . gmdate('D, d M Y H:i:s', time()+$expires));
-    #    header("Pragma: cache");
-    #    header("Cache-Control: max-age=$expires");
-    #    if (is_string($etag)) {
-    #        header("ETag: {$etag}");
-    #    }
-    #}
+        # For an explanation on how the expires header and the etag header work
+        # together, please see http://stackoverflow.com/a/500103/426224
+        response.set_header("Expires", expires)
+        response.set_header("Pragma", "cache")
+        response.set_header("Cache-Control", "public, max-age=" + str(expires_secs))
+        if etag is not None:
+            response.set_header('ETag', etag)
 
     def imageTile(self):
-        # TODO
-        #$etag = self.etag("img");
-        #self.checkCache($etag);
+        etag = self.etag("img")
+        self.checkCache(etag)
 
         if self.is_tms:
             self.tileset = self.tileset[:len(self.tileset) - 4]
@@ -400,8 +392,7 @@ class MapTileController(BaseClass):
                 #imagepng($png);
 
                 response.set_header('Content-type', 'image/png')
-                # TODO
-                #self.cachingHeaders($etag);
+                self.cachingHeaders(etag)
 
             else:
 
@@ -419,8 +410,7 @@ class MapTileController(BaseClass):
 
                 # - serve the tile
                 response.set_header('Content-type', 'image/' + fmt)
-                # TODO
-                #self.cachingHeaders($etag);
+                self.cachingHeaders(etag)
 
             self.closeDB()
             return data
@@ -518,8 +508,7 @@ class MapTileController(BaseClass):
             #ini_set('zlib.output_compression', 'Off')
             response.set_header('Content-type', 'application/json')
             response.set_header('Content-Length', len(json))
-            # TODO
-            #self.cachingHeaders();
+            self.cachingHeaders()
 
             return json
 
