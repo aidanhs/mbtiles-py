@@ -32,13 +32,11 @@ app = bottle.Bottle()
 
 def run():
 
+    #identifier_filter = lambda c: (r'[-\d_\s]+', lambda v: v, lambda v: v)
+    idfn = lambda v: v
     def identifier_filter(config):
-        regexp = r'[-\d_\w\s]+'
-        def to_python(val):
-            return val
-        def to_url(val):
-            return val
-        return regexp, to_python, to_url
+        regexp = r'[-_\d\w\s]+'
+        return [regexp, idfn, idfn]
     app.router.add_filter('_identifier', identifier_filter)
 
     @app.route('/')
@@ -214,9 +212,8 @@ class TileMapServiceController(BaseClass):
 
             title = htmlspecialchars(params['name'])
             description = htmlspecialchars(params['description'])
-            fmt = params['format']
-
-            if fmt.lower in ["jpg", "jpeg"]:
+            if 'format' in params and params['format'].lower() in ["jpg", "jpeg"]:
+                fmt = params['format'].lower()
                 mimetype = "image/jpeg"
             else:
                 fmt = "png"
@@ -237,8 +234,10 @@ class TileMapServiceController(BaseClass):
                 """ % (base, title, description, mimetype, fmt)
             )
 
-            for zoom in self.readzooms(self.db):
-                href = base + "1.0.0/" + self.layer + "/" + zoom
+            minzoom = int(params['minzoom'])
+            maxzoom = int(params['maxzoom'])
+            for zoom in range(minzoom, maxzoom + 1):
+                href = base + "1.0.0/" + self.layer + "/" + str(zoom)
                 units_pp = 78271.516 / pow(2, zoom)
 
                 ret += '<TileSet href="%s" units-per-pixel="%s" order="%s" />' % (href, units_pp, zoom)
@@ -257,18 +256,9 @@ class TileMapServiceController(BaseClass):
             params[name] = value
         return params
 
-    def readzooms(self, db):
-        params = self.readparams(db)
-        minzoom = params['minzoom']
-        maxzoom = params['maxzoom']
-        return range(minzoom, maxzoom + 1)
-
     def getBaseUrl(self):
-        return "http://localhost:8080/"
-        # TODO
-        #$protocol = empty($_SERVER["HTTPS"])?"http":"https";
-        #return $protocol . '://' . $_SERVER['HTTP_HOST'] . preg_replace('/\/(1.0.0\/)?[^\/]*$/', '/', $_SERVER['REQUEST_URI']);
-
+        parts = request.urlparts
+        return parts.scheme + "://" + parts.netloc + '/'
 
 
 class MapTileController(BaseClass):
@@ -318,10 +308,6 @@ class MapTileController(BaseClass):
 
         jsongrid = self.getUTFgrid()
 
-        # TODO
-        # disable ZLIB ouput compression
-        #ini_set('zlib.output_compression', 'Off');
-
         # serve JSON file
         response.set_header('Content-type', 'application/json; charset=utf-8')
         response.set_header('Content-Length', len(jsongrid))
@@ -335,10 +321,6 @@ class MapTileController(BaseClass):
 
         jsongrid = self.getUTFgrid()
         jsonpgrid = self.callback + "(" + jsongrid + ")"
-
-        # TODO
-        # disable ZLIB output compression
-        #ini_set('zlib.output_compression', 'Off');
 
         # serve JSON file
         response.set_header('Content-type', 'application/json; charset=utf-8')
@@ -506,8 +488,6 @@ class MapTileController(BaseClass):
             else:
                 ret = json.dumps(tilejson)
 
-            # TODO
-            #ini_set('zlib.output_compression', 'Off')
             response.set_header('Content-type', 'application/json')
             response.set_header('Content-Length', len(ret))
             self.cachingHeaders()
